@@ -1,8 +1,8 @@
 default: build
 hard: test
 
-CRATE = disjoint-sets
-REPO  = $(PROJECT)-rs
+CRATE = disjoint_sets
+REPO  = disjoint-sets-rs
 
 build:
 	clear
