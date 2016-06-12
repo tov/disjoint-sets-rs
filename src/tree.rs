@@ -6,77 +6,77 @@ use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 use std::mem;
 
-/// Union-find with associated data.
+/// Tree-based union-find with associated data.
 ///
 /// This union-find implementation uses nodes to represent set elements
 /// in a parent-pointer tree. Each set has associated with it an object
 /// of type `Data`, which can be looked up and modified via any
 /// representative of the set.
 ///
-/// Construct a new singleton set with [`Node::new`](#method.new).
-pub struct Node<Data = ()>(Rc<RefCell<NodeImpl<Data>>>);
+/// Construct a new singleton set with [`UnionFindNode::new`](#method.new).
+pub struct UnionFindNode<Data = ()>(Rc<RefCell<NodeImpl<Data>>>);
 
 enum NodeImpl<Data> {
     Root {
         data: Data,
         rank: u8,
     },
-    Link(Node<Data>),
+    Link(UnionFindNode<Data>),
 }
 
 use self::NodeImpl::*;
 
-impl<Data> Node<Data> {
+impl<Data> UnionFindNode<Data> {
     fn id(&self) -> usize {
         &*self.0 as *const _ as usize
     }
 }
 
-impl<Data> PartialEq for Node<Data> {
-    fn eq(&self, other: &Node<Data>) -> bool {
+impl<Data> PartialEq for UnionFindNode<Data> {
+    fn eq(&self, other: &UnionFindNode<Data>) -> bool {
         self.id() == other.id()
     }
 }
 
-impl<Data> Eq for Node<Data> { }
+impl<Data> Eq for UnionFindNode<Data> { }
 
-impl<Data> PartialOrd for Node<Data> {
-    fn partial_cmp(&self, other: &Node<Data>) -> Option<Ordering> {
+impl<Data> PartialOrd for UnionFindNode<Data> {
+    fn partial_cmp(&self, other: &UnionFindNode<Data>) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl<Data> Ord for Node<Data> {
-    fn cmp(&self, other: &Node<Data>) -> Ordering {
+impl<Data> Ord for UnionFindNode<Data> {
+    fn cmp(&self, other: &UnionFindNode<Data>) -> Ordering {
         self.id().cmp(&other.id())
     }
 }
 
-impl<Data> Hash for Node<Data> {
+impl<Data> Hash for UnionFindNode<Data> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.id().hash(state)
     }
 }
 
-impl<Data> Clone for Node<Data> {
+impl<Data> Clone for UnionFindNode<Data> {
     fn clone(&self) -> Self {
-        Node(self.0.clone())
+        UnionFindNode(self.0.clone())
     }
 }
 
-impl<Data: Default> Default for Node<Data> {
+impl<Data: Default> Default for UnionFindNode<Data> {
     fn default() -> Self {
-        Node::new(Default::default())
+        UnionFindNode::new(Default::default())
     }
 }
 
-impl<Data> Node<Data> {
+impl<Data> UnionFindNode<Data> {
     /// Creates a new singleton set with associated data.
     ///
     /// Initially this set is disjoint from all other sets, but can
     /// be joined with other sets using [`union`](#method.union).
     pub fn new(data: Data) -> Self {
-        Node(Rc::new(RefCell::new(Root {
+        UnionFindNode(Rc::new(RefCell::new(Root {
             data: data,
             rank: 0,
         })))

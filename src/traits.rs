@@ -1,7 +1,8 @@
 use std::fmt::Debug;
 
-/// A type can be used as a union-find element if it supports safe
-/// conversion to and from `usize`.
+/// A type that can be used as a union-find element.
+///
+/// It must be safely convertible to and from `usize`.
 ///
 /// The two method must be well-behaved partial inverses as follows:
 ///
