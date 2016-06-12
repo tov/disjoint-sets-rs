@@ -9,6 +9,9 @@ use std::cell::Cell;
 pub mod traits;
 pub use traits::ElementType;
 
+pub mod tree;
+pub use tree::Node;
+
 /// A union-find structure representing a set of disjoint sets.
 #[derive(Clone, Debug)]
 pub struct UnionFind<E: ElementType> {
@@ -82,7 +85,7 @@ impl<E: ElementType> UnionFind<E> {
     }
 
     /// Determines whether two elements are in the same set.
-    pub fn is_same(&self, a: E, b: E) -> bool {
+    pub fn equiv(&self, a: E, b: E) -> bool {
         self.find(a) == self.find(b)
     }
 
