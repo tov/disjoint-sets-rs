@@ -20,13 +20,17 @@ interior mutability.
 
 ## Usage
 
-It’s [on crates.io](https://crates.io/crates/disjoint-sets), so it can be
-used by adding `disjoint-sets` to the dependencies in your project’s
-`Cargo.toml`:
+It’s [on crates.io](https://crates.io/crates/disjoint-sets), so add
+this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
 disjoint-sets = "*"
+```
+
+And add this to your crate root:
+```rust
+extern crate disjoint_sets;
 ```
 
 ## Examples

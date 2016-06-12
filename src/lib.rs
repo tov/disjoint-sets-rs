@@ -13,6 +13,21 @@
 //! All three perform rank-balanced path compression à la Tarjan,
 //! using interior mutability.
 //!
+//! # Usage
+//!
+//! It’s [on crates.io](https://crates.io/crates/disjoint-sets), so add
+//! this to your `Cargo.toml`:
+//!
+//! ```toml
+//! [dependencies]
+//! disjoint-sets = "*"
+//! ```
+//!
+//! And add this to your crate root:
+//! ```
+//! extern crate disjoint_sets;
+//! ```
+//!
 //! # Examples
 //!
 //! Kruskal’s algorithm to find the minimum spanning tree of a graph:
