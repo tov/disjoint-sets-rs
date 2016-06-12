@@ -2,6 +2,7 @@
 
 use std::cell::RefCell;
 use std::cmp::Ordering;
+use std::fmt::{self, Debug};
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 use std::mem;
@@ -29,6 +30,12 @@ use self::NodeImpl::*;
 impl<Data> UnionFindNode<Data> {
     fn id(&self) -> usize {
         &*self.0 as *const _ as usize
+    }
+}
+
+impl<Data> Debug for UnionFindNode<Data> {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        write!(formatter, "UnionFindNode({:p})", self.0)
     }
 }
 
