@@ -1,8 +1,8 @@
 [package]
 name = "disjoint-sets"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Jesse A. Tov <jesse.tov@gmail.com>"]
-description = "Two union-find implementations"
+description = "Three union-find implementations"
 repository = "https://github.com/tov/disjoint-sets-rs"
 homepage = "https://github.com/tov/disjoint-sets-rs"
 documentation = "http://tov.github.io/disjoint-sets-rs/"
