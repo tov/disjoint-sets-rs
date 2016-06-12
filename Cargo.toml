@@ -2,7 +2,7 @@
 name = "disjoint-sets"
 version = "0.1.1"
 authors = ["Jesse A. Tov <jesse.tov@gmail.com>"]
-description = "An implementation of Tarjan's Union-Find"
+description = "Two union-find implementations"
 repository = "https://github.com/tov/disjoint-sets-rs"
 homepage = "https://github.com/tov/disjoint-sets-rs"
 documentation = "http://tov.github.io/disjoint-sets-rs/"
