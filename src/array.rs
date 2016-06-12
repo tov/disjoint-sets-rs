@@ -132,9 +132,9 @@ mod tests {
     #[test]
     fn union() {
         let mut uf = UnionFind::<u32>::new(8);
-        assert!(!uf.is_same(0, 1));
+        assert!(!uf.equiv(0, 1));
         uf.union(0, 1);
-        assert!(uf.is_same(0, 1));
+        assert!(uf.equiv(0, 1));
     }
 
     #[test]
@@ -144,20 +144,20 @@ mod tests {
         uf.union(1, 2);
         uf.union(4, 3);
         uf.union(3, 2);
-        assert!(uf.is_same(0, 1));
-        assert!(uf.is_same(0, 2));
-        assert!(uf.is_same(0, 3));
-        assert!(uf.is_same(0, 4));
-        assert!(!uf.is_same(0, 5));
+        assert!(uf.equiv(0, 1));
+        assert!(uf.equiv(0, 2));
+        assert!(uf.equiv(0, 3));
+        assert!(uf.equiv(0, 4));
+        assert!(!uf.equiv(0, 5));
 
         uf.union(5, 3);
-        assert!(uf.is_same(0, 5));
+        assert!(uf.equiv(0, 5));
 
         uf.union(6, 7);
-        assert!(uf.is_same(6, 7));
-        assert!(!uf.is_same(5, 7));
+        assert!(uf.equiv(6, 7));
+        assert!(!uf.equiv(5, 7));
 
         uf.union(0, 7);
-        assert!(uf.is_same(5, 7));
+        assert!(uf.equiv(5, 7));
     }
 }

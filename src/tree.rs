@@ -228,3 +228,49 @@ impl<Data> UnionFindNode<Data> {
         result
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn union() {
+        let mut uf0 = UnionFindNode::new(());
+        let mut uf1 = UnionFindNode::new(());
+        assert!(!uf0.equiv(&uf1));
+        uf0.union(&mut uf1);
+        assert!(uf0.equiv(&uf1));
+    }
+
+    #[test]
+    fn unions() {
+        let mut uf0 = UnionFindNode::new(());
+        let mut uf1 = UnionFindNode::new(());
+        let mut uf2 = UnionFindNode::new(());
+        let mut uf3 = UnionFindNode::new(());
+        let mut uf4 = UnionFindNode::new(());
+        let mut uf5 = UnionFindNode::new(());
+        let mut uf6 = UnionFindNode::new(());
+        let mut uf7 = UnionFindNode::new(());
+
+        uf0.union(&mut uf1);
+        uf1.union(&mut uf2);
+        uf4.union(&mut uf3);
+        uf3.union(&mut uf2);
+        assert!(uf0.equiv(&uf1));
+        assert!(uf0.equiv(&uf2));
+        assert!(uf0.equiv(&uf3));
+        assert!(uf0.equiv(&uf4));
+        assert!(!uf0.equiv(&uf5));
+
+        uf3.union(&mut uf5);
+        assert!(uf0.equiv(&uf5));
+
+        uf7.union(&mut uf6);
+        assert!(uf6.equiv(&uf7));
+        assert!(!uf5.equiv(&uf7));
+
+        uf0.union(&mut uf7);
+        assert!(uf5.equiv(&uf7));
+    }
+}
