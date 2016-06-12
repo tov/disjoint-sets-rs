@@ -1,12 +1,19 @@
 use std::cell::Cell;
+use std::fmt::{self, Debug};
 
 use super::ElementType;
 
 /// Array-based union-find representing a set of disjoint sets.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct UnionFind<E: ElementType = usize> {
     elements: Vec<Cell<E>>,
     ranks: Vec<u8>,
+}
+
+impl<E: Debug + ElementType> Debug for UnionFind<E> {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        write!(formatter, "UnionFind({:?})", self.elements)
+    }
 }
 
 impl<E: ElementType> UnionFind<E> {
