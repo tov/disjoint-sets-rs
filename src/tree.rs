@@ -23,6 +23,7 @@ enum NodeImpl<Data> {
         rank: u8,
     },
     Link(UnionFindNode<Data>),
+    Dummy,
 }
 
 use self::NodeImpl::*;
@@ -148,6 +149,7 @@ impl<Data> UnionFindNode<Data> {
                 *parent = root.clone();
                 root
             }
+            Dummy => panic!("find: got dummy"),
         }
     }
 
@@ -159,6 +161,7 @@ impl<Data> UnionFindNode<Data> {
                 *parent = root.clone();
                 (root, rank)
             }
+            Dummy => panic!("find: got dummy"),
         }
     }
 
@@ -208,31 +211,34 @@ impl<Data> UnionFindNode<Data> {
     fn set_parent(&self, new_parent: Self) -> Data {
         match mem::replace(&mut *self.0.borrow_mut(), Link(new_parent)) {
             Root { data, .. } => data,
-            Link(_) => panic!("set_parent: non-root"),
+            _ => panic!("set_parent: non-root"),
         }
     }
 
+    // PRECONDITION:
+    //  - self != parent
+    //  - self and parent are both root nodes
     fn set_parent_with<R, F>(&self, parent: Self, f: F) -> R
             where F: FnOnce(Data, Data) -> (Data, R) {
-        use std::ptr;
-
         let mut guard_self = self.0.borrow_mut();
+        let mut guard_parent = parent.0.borrow_mut();
 
-        let result = match (&mut *guard_self, &mut *parent.0.borrow_mut()) {
-            (&mut Root { data: ref mut data_self, .. },
-             &mut Root { data: ref mut data_parent, .. }) => {
-                unsafe {
-                    let (new_data, result) = f(ptr::read(data_self),
-                                               ptr::read(data_parent));
-                    ptr::write(data_parent, new_data);
-                    result
-                }
+        let contents_self = mem::replace(&mut *guard_self,
+                                         Link(parent.clone()));
+        let contents_parent = mem::replace(&mut *guard_parent, Dummy);
+
+        match (contents_self, contents_parent) {
+            (Root { data: data_self, .. },
+             Root { data: data_parent, rank }) => {
+                let (new_data, result) = f(data_self, data_parent);
+                mem::replace(&mut *guard_parent, Root {
+                    data: new_data,
+                    rank: rank,
+                });
+                result
             }
             _ => panic!("set_parent_with: non-root"),
-        };
-
-        unsafe { ptr::write(&mut *guard_self, Link(parent)); }
-        result
+        }
     }
 }
 
