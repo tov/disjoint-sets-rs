@@ -4,11 +4,15 @@
 //!
 //!  - [`UnionFind`](struct.UnionFind.html): An array-based union-find
 //!    where clients represent elements as small unsigned integers.
+//!
 //!  - [`UnionFindNode`](struct.UnionFindNode.html): A tree-based
-//!    union-find where each set can have associated ata, and where
+//!    union-find where each set can have associated data, and where
 //!    clients represent elements as opaque tree nodes.
+//!
 //!  - [`AUnionFind`](struct.AUnionFind.html): Like `UnionFind`, but
-//!    it’s `Sync` for sharing between threads.
+//!    it’s `Sync` for sharing between threads. (I’m not an expert on
+//!    concurrent programming, so I would take this API with a grain of
+//!    salt.)
 //!
 //! All three perform rank-balanced path compression à la Tarjan,
 //! using interior mutability.
