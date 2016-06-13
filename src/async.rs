@@ -17,6 +17,12 @@ impl Debug for AUnionFind {
     }
 }
 
+impl Default for AUnionFind {
+    fn default() -> Self {
+        AUnionFind::new(0)
+    }
+}
+
 impl AUnionFind {
     /// Creates a new asynchronous union-find of `size` elements.
     pub fn new(size: usize) -> Self {

@@ -16,6 +16,12 @@ impl<E: Debug + ElementType> Debug for UnionFind<E> {
     }
 }
 
+impl<E: ElementType> Default for UnionFind<E> {
+    fn default() -> Self {
+        UnionFind::new(0)
+    }
+}
+
 impl<E: ElementType> UnionFind<E> {
     /// Creates a new union-find of `size` elements.
     ///
