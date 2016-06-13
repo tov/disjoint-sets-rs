@@ -11,3 +11,4 @@ license = "MIT/Apache-2.0"
 keywords = ["union-find", "Tarjan"]
 
 [dependencies]
+clippy = { version = "*", optional = true }

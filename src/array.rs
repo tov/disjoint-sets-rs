@@ -37,6 +37,14 @@ impl<E: ElementType> UnionFind<E> {
         self.elements.len()
     }
 
+    /// Is the union-find devoid of elements?
+    ///
+    /// It is possible to create an empty `UnionFind` and then add
+    /// elements with [`alloc`](#method.alloc).
+    pub fn is_empty(&self) -> bool {
+        self.elements.is_empty()
+    }
+
     /// Creates a new element in a singleton set.
     ///
     /// # Panics

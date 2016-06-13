@@ -33,6 +33,15 @@ impl AUnionFind {
         self.elements.len()
     }
 
+    /// Is the union-find devoid of elements?
+    ///
+    /// It is possible to create an empty `AUnionFind`, but unlike with
+    /// [`UnionFind`](struct.UnionFind.html) it is not possible to add
+    /// elements.
+    pub fn is_empty(&self) -> bool {
+        self.elements.is_empty()
+    }
+
     /// Joins the sets of the two given elements.
     pub fn union(&self, mut a: usize, mut b: usize) {
         loop {
@@ -48,11 +57,9 @@ impl AUnionFind {
                 if self.change_parent(b, b, a) { return }
             } else if rank_b > rank_a {
                 if self.change_parent(a, a, b) { return }
-            } else {
-                if self.change_parent(a, a, b) {
-                    self.increment_rank(b);
-                    return;
-                }
+            } else if self.change_parent(a, a, b) {
+                self.increment_rank(b);
+                return;
             }
         }
     }

@@ -125,7 +125,7 @@ impl<Data> UnionFindNode<Data> {
         let (b, rank_b) = other.find_with_rank();
 
         if a == b {
-            return None
+            None
         } else if rank_a > rank_b {
             Some(b.set_parent(a))
         } else if rank_b > rank_a {
@@ -193,8 +193,8 @@ impl<Data> UnionFindNode<Data> {
     fn root_with_data<R, F>(&self, f: F) -> R
             where F: FnOnce(&mut Data) -> R {
 
-        match &mut *self.0.borrow_mut() {
-            &mut Root { ref mut data, .. } => f(data),
+        match *self.0.borrow_mut() {
+            Root { ref mut data, .. } => f(data),
             _ => panic!("with_data: non-root")
         }
     }
