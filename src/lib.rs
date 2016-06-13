@@ -24,6 +24,7 @@
 //! ```
 //!
 //! And add this to your crate root:
+//!
 //! ```
 //! extern crate disjoint_sets;
 //! ```

@@ -29,6 +29,7 @@ disjoint-sets = "*"
 ```
 
 And add this to your crate root:
+
 ```rust
 extern crate disjoint_sets;
 ```
