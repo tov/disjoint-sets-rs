@@ -66,11 +66,15 @@ impl<E: ElementType> UnionFind<E> {
     }
 
     /// Joins the sets of the two given elements.
-    pub fn union(&mut self, a: E, b: E) {
+    ///
+    /// Returns whether anything changed. That is, if the sets were
+    /// different, it returns `true`, but if they were already the same
+    /// then it returns `false`.
+    pub fn union(&mut self, a: E, b: E) -> bool {
         let a = self.find(a);
         let b = self.find(b);
 
-        if a == b { return }
+        if a == b { return false; }
 
         let rank_a = self.rank(a);
         let rank_b = self.rank(b);
@@ -83,6 +87,8 @@ impl<E: ElementType> UnionFind<E> {
             self.set_parent(a, b);
             self.increment_rank(b);
         }
+
+        true
     }
 
     /// Finds the representative element for the given element’s set.
@@ -161,10 +167,12 @@ mod tests {
     #[test]
     fn unions() {
         let mut uf = UnionFind::<usize>::new(8);
-        uf.union(0, 1);
-        uf.union(1, 2);
-        uf.union(4, 3);
-        uf.union(3, 2);
+        assert!(uf.union(0, 1));
+        assert!(uf.union(1, 2));
+        assert!(uf.union(4, 3));
+        assert!(uf.union(3, 2));
+        assert!(! uf.union(0, 3));
+
         assert!(uf.equiv(0, 1));
         assert!(uf.equiv(0, 2));
         assert!(uf.equiv(0, 3));

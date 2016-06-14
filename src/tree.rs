@@ -159,12 +159,12 @@ use std::mem;
 ///
 ///         match (v1.clone_data(), v2.clone_data()) {
 ///             (Term_::Indeterminate, _) => {
-///                 v1.union_with(&mut v2, |_, t2| (t2, ()));
+///                 v1.union_with(&mut v2, |_, t2| t2);
 ///                 Ok(())
 ///             },
 ///
 ///             (_, Term_::Indeterminate) => {
-///                 v1.union_with(&mut v2, |t1, _| (t1, ()));
+///                 v1.union_with(&mut v2, |t1, _| t1);
 ///                 Ok(())
 ///             },
 ///
@@ -315,25 +315,28 @@ impl<Data> UnionFindNode<Data> {
     ///
     /// To determine the data associated with the set resulting from a
     /// union, we pass a closure `f`, which will be passed `self`’s data
-    /// and `other`’s data. Then `f` must return a pair of the data to
-    /// associate with the unioned set and any remaining value to return
-    /// to the client.
-    pub fn union_with<R, F>(&mut self, other: &mut Self, f: F) -> Option<R>
-            where F: FnOnce(Data, Data) -> (Data, R) {
+    /// and `other`’s data (in that order). Then `f` must return the data to
+    /// associate with the unioned set.
+    pub fn union_with<F>(&mut self, other: &mut Self, f: F) -> bool
+            where F: FnOnce(Data, Data) -> Data {
 
         let (a, rank_a) = self.find_with_rank();
         let (b, rank_b) = other.find_with_rank();
 
         if a == b {
-            None
-        } else if rank_a > rank_b {
-            Some(b.set_parent_with(a, |b_data, a_data| f(a_data, b_data)))
+            return false;
+        }
+
+        if rank_a > rank_b {
+            b.set_parent_with(a, |b_data, a_data| f(a_data, b_data))
         } else if rank_b > rank_a {
-            Some(a.set_parent_with(b, f))
+            a.set_parent_with(b, f)
         } else {
             b.increment_rank();
-            Some(a.set_parent_with(b, f))
+            a.set_parent_with(b, f)
         }
+
+        true
     }
 
     /// Unions two sets.
@@ -439,8 +442,8 @@ impl<Data> UnionFindNode<Data> {
     // PRECONDITION:
     //  - self != parent
     //  - self and parent are both root nodes
-    fn set_parent_with<R, F>(&self, parent: Self, f: F) -> R
-            where F: FnOnce(Data, Data) -> (Data, R) {
+    fn set_parent_with<F>(&self, parent: Self, f: F)
+            where F: FnOnce(Data, Data) -> Data {
         let mut guard_self = self.0.borrow_mut();
         let mut guard_parent = parent.0.borrow_mut();
 
@@ -451,12 +454,11 @@ impl<Data> UnionFindNode<Data> {
         match (contents_self, contents_parent) {
             (Root { data: data_self, .. },
              Root { data: data_parent, rank }) => {
-                let (new_data, result) = f(data_self, data_parent);
+                let new_data = f(data_self, data_parent);
                 mem::replace(&mut *guard_parent, Root {
                     data: new_data,
                     rank: rank,
                 });
-                result
             }
             _ => panic!("set_parent_with: non-root"),
         }
@@ -614,12 +616,12 @@ mod tests {
 
             match (v1.clone_data(), v2.clone_data()) {
                 (Term_::Indeterminate, _) => {
-                    v1.union_with(&mut v2, |_, t2| (t2, ()));
+                    v1.union_with(&mut v2, |_, t2| t2);
                     Ok(())
                 },
 
                 (_, Term_::Indeterminate) => {
-                    v1.union_with(&mut v2, |t1, _| (t1, ()));
+                    v1.union_with(&mut v2, |t1, _| t1);
                     Ok(())
                 },
 

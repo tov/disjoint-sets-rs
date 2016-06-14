@@ -49,23 +49,27 @@ impl AUnionFind {
     }
 
     /// Joins the sets of the two given elements.
-    pub fn union(&self, mut a: usize, mut b: usize) {
+    ///
+    /// Returns whether anything changed. That is, if the sets were
+    /// different, it returns `true`, but if they were already the same
+    /// then it returns `false`.
+    pub fn union(&self, mut a: usize, mut b: usize) -> bool {
         loop {
             a = self.find(a);
             b = self.find(b);
 
-            if a == b { return }
+            if a == b { return false; }
 
             let rank_a = self.rank(a);
             let rank_b = self.rank(b);
 
             if rank_a > rank_b {
-                if self.change_parent(b, b, a) { return }
+                if self.change_parent(b, b, a) { return true; }
             } else if rank_b > rank_a {
-                if self.change_parent(a, a, b) { return }
+                if self.change_parent(a, a, b) { return true; }
             } else if self.change_parent(a, a, b) {
                 self.increment_rank(b);
-                return;
+                return true;
             }
         }
     }
@@ -149,10 +153,12 @@ mod tests {
     #[test]
     fn unions() {
         let uf = AUnionFind::new(8);
-        uf.union(0, 1);
-        uf.union(1, 2);
-        uf.union(4, 3);
-        uf.union(3, 2);
+        assert!(uf.union(0, 1));
+        assert!(uf.union(1, 2));
+        assert!(uf.union(4, 3));
+        assert!(uf.union(3, 2));
+        assert!(! uf.union(0, 3));
+
         assert!(uf.equiv(0, 1));
         assert!(uf.equiv(0, 2));
         assert!(uf.equiv(0, 3));
