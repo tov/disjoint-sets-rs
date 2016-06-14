@@ -4,7 +4,7 @@ use std::fmt::Debug;
 ///
 /// It must be safely convertible to and from `usize`.
 ///
-/// The two method must be well-behaved partial inverses as follows:
+/// The two methods must be well-behaved partial inverses as follows:
 ///
 /// -  For all `f: usize`, if `f::from_usize()` = `Some(t)` then
 ///    `t::to_usize()` = `f`.
