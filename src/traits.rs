@@ -14,7 +14,7 @@ use std::fmt::Debug;
 ///    usize` such that `g > f`, `g::from_usize()` = `None`.
 ///
 /// In other words, `ElementType` sets up a bijection between the first
-/// *k* `usize` values and some *k~ values of the `Self` type.
+/// *k* `usize` values and some *k* values of the `Self` type.
 pub trait ElementType : Copy + Debug + Eq {
     /// Converts from `usize` to the element type.
     ///
