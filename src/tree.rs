@@ -1,4 +1,223 @@
 //! Tree-based union-find with associated data.
+//!
+//! As an example, we perform first-order unification using
+//! [`UnionFindNode`](struct.UnionFindNode.html)s to represent
+//! unification variables.
+//!
+//! ```
+//! use disjoint_sets::UnionFindNode;
+//!
+//! // A term is either a variable or a function symbol applied to some
+//! // terms.
+//! #[derive(Clone, Debug, PartialEq, Eq)]
+//! enum Term {
+//!     Variable(String),
+//!     Constructor {
+//!         symbol: String,
+//!         params: Vec<Term>,
+//!     }
+//! }
+//!
+//! // Syntactic sugar for terms — write them LISP-style:
+//! //
+//! //   A             a variable
+//! //
+//! //   (f)           a nullary function symbol
+//! //
+//! //   (f A B (g))   function symbol applied to two variables and a
+//! //                 function symbol
+//! //
+//! //   (arrow (tuple (vector A) (int)) A)
+//! //                 type scheme of a polymorphic vector index function
+//! //
+//! macro_rules! term {
+//!     ( ( $symbol:ident $($args:tt)* ) )
+//!         =>
+//!     {
+//!         Term::Constructor {
+//!             symbol: stringify!($symbol).to_owned(),
+//!             params: vec![ $(term!($args)),* ],
+//!         }
+//!     };
+//!
+//!     ( $symbol:ident )
+//!         =>
+//!     {
+//!         Term::Variable(stringify!($symbol).to_owned())
+//!     };
+//! }
+//!
+//! // Internally we break terms down into variables about which we have
+//! // no information, and variables that have unified with a function
+//! // symbol applied to other variables.
+//! #[derive(Clone, Debug)]
+//! enum Term_ {
+//!     Indeterminate,
+//!     Fixed {
+//!         symbol: String,
+//!         params: Vec<Variable>,
+//!     },
+//! }
+//! type Variable = UnionFindNode<Term_>;
+//!
+//! // To convert from external `Term`s to internal `Term_`s we use an
+//! // environment mapping variable names to their internal
+//! // representations as union-find nodes.
+//! use std::collections::HashMap;
+//! #[derive(Debug)]
+//! struct Environment(HashMap<String, Variable>);
+//!
+//! // The environment can get Rc-cycles in it (because we don’t do an
+//! // occurs check, hence terms can be recursive). To avoid leaking, we
+//! // need to clear the references out of it.
+//! impl Drop for Environment {
+//!     fn drop(&mut self) {
+//!         for (_, v) in self.0.drain() {
+//!             v.replace_data(Term_::Indeterminate);
+//!         }
+//!     }
+//! }
+//!
+//! impl Term {
+//!     // Analyzes an external `Term`, converting it to internal
+//!     // `Term_`s and returning a variable mapped to it.
+//!     fn intern(self, env: &mut Environment) -> Variable {
+//!         match self {
+//!             Term::Variable(v) => {
+//!                 env.0.entry(v).or_insert_with(|| {
+//!                     UnionFindNode::new(Term_::Indeterminate)
+//!                 }).clone()
+//!             }
+//!
+//!             Term::Constructor { symbol, params } => {
+//!                 let params = params.into_iter()
+//!                     .map(|term| Term::intern(term, env))
+//!                     .collect::<Vec<_>>();
+//!                 UnionFindNode::new(Term_::Fixed {
+//!                     symbol: symbol,
+//!                     params: params,
+//!                 })
+//!             },
+//!         }
+//!     }
+//! }
+//!
+//! // A constraint is a collection of variables that need to unify,
+//! // along with an environment mapping names to variables.
+//! struct Constraint {
+//!     eqs: Vec<(Variable, Variable)>,
+//!     env: Environment,
+//! }
+//!
+//! impl Default for Constraint {
+//!     // Returns the empty (fully solved) constraint.
+//!     fn default() -> Self {
+//!         Constraint {
+//!             env: Environment(HashMap::new()),
+//!             eqs: Vec::new(),
+//!         }
+//!     }
+//! }
+//!
+//! impl Constraint {
+//!     // Creates a constraint that unifies two terms.
+//!     fn new(t1: Term, t2: Term) -> Self {
+//!         let mut new: Constraint = Default::default();
+//!         new.push(t1, t2);
+//!         new
+//!     }
+//!
+//!     // Adds two additional terms to unify.
+//!     fn push(&mut self, t1: Term, t2: Term) {
+//!         let v1 = t1.intern(&mut self.env);
+//!         let v2 = t2.intern(&mut self.env);
+//!         self.eqs.push((v1, v2))
+//!     }
+//!
+//!     // Performs a single unification step on a pair of variables.
+//!     // This may result in more equalities to add to the constraint.
+//!     fn unify(&mut self, mut v1: Variable, mut v2: Variable)
+//!              -> Result<(), String> {
+//!
+//!         match (v1.clone_data(), v2.clone_data()) {
+//!             (Term_::Indeterminate, _) => {
+//!                 v1.union_with(&mut v2, |_, t2| (t2, ()));
+//!                 Ok(())
+//!             },
+//!
+//!             (_, Term_::Indeterminate) => {
+//!                 v1.union_with(&mut v2, |t1, _| (t1, ()));
+//!                 Ok(())
+//!             },
+//!
+//!             (Term_::Fixed { symbol: symbol1, params: params1 },
+//!              Term_::Fixed { symbol: symbol2, params: params2 }) => {
+//!                 if symbol1 != symbol2 {
+//!                     let msg = format!(
+//!                         "Could not unify symbols: {} and {}",
+//!                         symbol1, symbol2);
+//!                     return Err(msg);
+//!                 }
+//!
+//!                 if params1.len() != params2.len() {
+//!                     let msg = format!(
+//!                         "Arity mismatch: {}: {} != {}",
+//!                         symbol1, params1.len(), params2.len());
+//!                     return Err(msg);
+//!                 }
+//!
+//!                 for (u1, u2) in params1.into_iter()
+//!                                        .zip(params2.into_iter()) {
+//!                     self.eqs.push((u1, u2));
+//!                 }
+//!
+//!                 v1.union(&mut v2);
+//!
+//!                 Ok(())
+//!             }
+//!         }
+//!     }
+//!
+//!     // Unifies equalities until there’s nothing left to do.
+//!     fn solve(mut self) -> Result<Environment, String> {
+//!         while let Some((v1, v2)) = self.eqs.pop() {
+//!             try!(self.unify(v1, v2));
+//!         }
+//!
+//!         Ok(self.env)
+//!     }
+//! }
+//!
+//! // Returns whether a pair of terms is unifiable.
+//! fn unifiable(t1: Term, t2: Term) -> bool {
+//!     Constraint::new(t1, t2).solve().is_ok()
+//! }
+//!
+//! fn main() {
+//!     assert!(unifiable(term![ A ], term![ A ]));
+//!     assert!(unifiable(term![ A ], term![ B ]));
+//!
+//!     assert!(  unifiable(term![ (a) ], term![ (a) ]));
+//!     assert!(! unifiable(term![ (a) ], term![ (b) ]));
+//!
+//!     assert!(  unifiable(term![ (a A) ], term![ (a A) ]));
+//!     assert!(  unifiable(term![ (a A) ], term![ (a B) ]));
+//!     assert!(! unifiable(term![ (a A) ], term![ (b A) ]));
+//!     assert!(  unifiable(term![ (a A B) ], term![ (a B A) ]));
+//!     assert!(! unifiable(term![ (a A B C) ], term![ (a B A) ]));
+//!
+//!     assert!(  unifiable(term![ (a (b)) ], term![ (a (b)) ]));
+//!     assert!(! unifiable(term![ (a (b)) ], term![ (a (c)) ]));
+//!     assert!(  unifiable(term![ (a A A) ], term![ (a (b) (b)) ]));
+//!     assert!(! unifiable(term![ (a A A) ], term![ (a (b) (c)) ]));
+//!     assert!(  unifiable(term![ (a   (f) A   B   C  ) ],
+//!                         term![ (a   A   B   C   (f)) ]));
+//!     assert!(! unifiable(term![ (a   (f) A   B   C  ) ],
+//!                         term![ (a   A   B   C   (g)) ]));
+//!     assert!(  unifiable(term![ (a   (f) A   B   C  ) ],
+//!                         term![ (a   A   D   C   (g)) ]));
+//! }
+//! ```
 
 use std::cell::RefCell;
 use std::cmp::Ordering;
@@ -285,5 +504,196 @@ mod tests {
 
         uf0.union(&mut uf7);
         assert!(uf5.equiv(&uf7));
+    }
+
+    //
+    // Unification example
+    //
+
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    enum Term {
+        Variable(String),
+        Constructor {
+            symbol: String,
+            params: Vec<Term>,
+        }
+    }
+
+    macro_rules! term {
+        ( ( $symbol:ident $($args:tt)* ) )
+            =>
+        {
+            Term::Constructor {
+                symbol: stringify!($symbol).to_owned(),
+                params: vec![ $(term!($args)),* ],
+            }
+        };
+
+        ( $symbol:ident )
+            =>
+        {
+            Term::Variable(stringify!($symbol).to_owned())
+        };
+    }
+
+    #[derive(Clone, Debug)]
+    enum Term_ {
+        Indeterminate,
+        Fixed {
+            symbol: String,
+            params: Vec<Variable>,
+        },
+    }
+    type Variable = UnionFindNode<Term_>;
+
+    use std::collections::HashMap;
+    #[derive(Debug)]
+    struct Environment(HashMap<String, Variable>);
+
+    impl Drop for Environment {
+        fn drop(&mut self) {
+            for (_, v) in self.0.drain() {
+                v.replace_data(Term_::Indeterminate);
+            }
+        }
+    }
+
+    impl Term {
+        fn intern(self, env: &mut Environment) -> Variable {
+            match self {
+                Term::Variable(v) => {
+                    env.0.entry(v).or_insert_with(|| {
+                        UnionFindNode::new(Term_::Indeterminate)
+                    }).clone()
+                }
+
+                Term::Constructor { symbol, params } => {
+                    let params = params.into_iter()
+                        .map(|term| Term::intern(term, env))
+                        .collect::<Vec<_>>();
+                    UnionFindNode::new(Term_::Fixed {
+                        symbol: symbol,
+                        params: params,
+                    })
+                },
+            }
+        }
+    }
+
+    struct Constraint {
+        env: Environment,
+        eqs: Vec<(Variable, Variable)>,
+    }
+
+    impl Default for Constraint {
+        fn default() -> Self {
+            Constraint {
+                env: Environment(HashMap::new()),
+                eqs: Vec::new(),
+            }
+        }
+    }
+
+    impl Constraint {
+        fn new(t1: Term, t2: Term) -> Self {
+            let mut new: Constraint = Default::default();
+            new.push(t1, t2);
+            new
+        }
+
+        fn push(&mut self, t1: Term, t2: Term) {
+            let v1 = t1.intern(&mut self.env);
+            let v2 = t2.intern(&mut self.env);
+            self.eqs.push((v1, v2))
+        }
+
+        fn unify(&mut self, mut v1: Variable, mut v2: Variable)
+                 -> Result<(), String> {
+
+            match (v1.clone_data(), v2.clone_data()) {
+                (Term_::Indeterminate, _) => {
+                    v1.union_with(&mut v2, |_, t2| (t2, ()));
+                    Ok(())
+                },
+
+                (_, Term_::Indeterminate) => {
+                    v1.union_with(&mut v2, |t1, _| (t1, ()));
+                    Ok(())
+                },
+
+                (Term_::Fixed { symbol: symbol1, params: params1 },
+                 Term_::Fixed { symbol: symbol2, params: params2 }) => {
+                    if symbol1 != symbol2 {
+                        let msg = format!(
+                            "Could not unify symbols: {} and {}",
+                            symbol1, symbol2);
+                        return Err(msg);
+                    }
+
+                    if params1.len() != params2.len() {
+                        let msg = format!(
+                            "Arity mismatch: {}: {} != {}",
+                            symbol1, params1.len(), params2.len());
+                        return Err(msg);
+                    }
+
+                    for (u1, u2) in params1.into_iter()
+                                           .zip(params2.into_iter()) {
+                        self.eqs.push((u1, u2));
+                    }
+
+                    v1.union(&mut v2);
+
+                    Ok(())
+                }
+            }
+        }
+
+        fn solve(mut self) -> Result<Environment, String> {
+            while let Some((v1, v2)) = self.eqs.pop() {
+                try!(self.unify(v1, v2));
+            }
+
+            Ok(self.env)
+        }
+    }
+
+    fn unifiable(t1: Term, t2: Term) -> bool {
+        Constraint::new(t1, t2).solve().is_ok()
+    }
+
+    #[test]
+    fn unify_vars() {
+        assert!(unifiable(term![ A ], term![ A ]));
+        assert!(unifiable(term![ A ], term![ B ]));
+    }
+
+    #[test]
+    fn unify_symbols() {
+        assert!(  unifiable(term![ (a) ], term![ (a) ]));
+        assert!(! unifiable(term![ (a) ], term![ (b) ]));
+    }
+
+    #[test]
+    fn unify_flat() {
+        assert!(  unifiable(term![ (a A) ], term![ (a A) ]));
+        assert!(  unifiable(term![ (a A) ], term![ (a B) ]));
+        assert!(! unifiable(term![ (a A) ], term![ (b A) ]));
+        assert!(  unifiable(term![ (a A B) ], term![ (a B A) ]));
+        assert!(! unifiable(term![ (a A B C) ], term![ (a B A) ]));
+    }
+
+    #[test]
+    fn unify_deeper() {
+        assert!(  unifiable(term![ (a (b)) ], term![ (a (b)) ]));
+        assert!(! unifiable(term![ (a (b)) ], term![ (a (c)) ]));
+        assert!(  unifiable(term![ (a A A) ], term![ (a (b) (b)) ]));
+        assert!(! unifiable(term![ (a A A) ], term![ (a (b) (c)) ]));
+        assert!(  unifiable(term![ (a   (f) A   B   C  ) ],
+                            term![ (a   A   B   C   (f)) ]));
+        assert!(! unifiable(term![ (a   (f) A   B   C  ) ],
+                            term![ (a   A   B   C   (g)) ]));
+        assert!(  unifiable(term![ (a   (f) A   B   C  ) ],
+                            term![ (a   A   D   C   (g)) ]));
     }
 }
