@@ -5,18 +5,17 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE-MIT)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](LICENSE-APACHE)
 
-This library provides three disjoint set data structures:
+The variants are:
 
- - `UnionFind`: An array-based union-find
-   where clients represent elements as small unsigned integers.
- - `UnionFindNode`: A tree-based
-   union-find where each set can have associated ata, and where
-   clients represent elements as opaque tree nodes.
- - `AUnionFind`: Like `UnionFind`, but `Sync` for sharing between
-   threads.
+   | structure | element type | data? | concurrent? |
+---| :-------: | :----------: | :---: | :---------: |
+ [`UnionFind`](struct.UnionFind.html) | array | small integer | no | no
+ [`UnionFindNode`](struct.UnionFindNode.html) | tree | tree node | yes | no
+ [`AUnionFind`](struct.AUnionFind.html) | array | `usize` | no | yes
 
-All three perform rank-balanced path compression à la Tarjan, using
-interior mutability.
+All three perform rank-balanced path compression à la Tarjan,
+using interior mutability.
+
 
 ## Usage
 
