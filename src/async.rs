@@ -11,6 +11,23 @@ pub struct AUnionFind {
     ranks:    Box<[AtomicUsize]>,
 }
 
+impl Clone for AUnionFind {
+    fn clone(&self) -> Self {
+        fn copy_slice(slice: &[AtomicUsize]) -> Box<[AtomicUsize]> {
+            let mut vec = Vec::with_capacity(slice.len());
+            for atomic in slice {
+                vec.push(AtomicUsize::new(atomic.load(Ordering::Relaxed)));
+            }
+            vec.into_boxed_slice()
+        }
+
+        AUnionFind {
+            elements: copy_slice(&*self.elements),
+            ranks: copy_slice(&*self.ranks),
+        }
+    }
+}
+
 impl Debug for AUnionFind {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "AUnionFind({:?})", self.elements)
