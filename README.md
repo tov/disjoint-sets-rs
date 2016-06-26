@@ -24,7 +24,7 @@ this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-disjoint-sets = "*"
+disjoint-sets = "0.3"
 ```
 
 And add this to your crate root:
