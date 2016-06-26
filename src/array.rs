@@ -5,33 +5,33 @@ use super::ElementType;
 
 /// Array-based union-find representing a set of disjoint sets.
 #[derive(Clone)]
-pub struct UnionFind<E: ElementType = usize> {
-    elements: Vec<Cell<E>>,
+pub struct UnionFind<Element: ElementType = usize> {
+    elements: Vec<Cell<Element>>,
     ranks: Vec<u8>,
 }
 
-impl<E: Debug + ElementType> Debug for UnionFind<E> {
+impl<Element: Debug + ElementType> Debug for UnionFind<Element> {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "UnionFind({:?})", self.elements)
     }
 }
 
-impl<E: ElementType> Default for UnionFind<E> {
+impl<Element: ElementType> Default for UnionFind<Element> {
     fn default() -> Self {
         UnionFind::new(0)
     }
 }
 
-impl<E: ElementType> UnionFind<E> {
+impl<Element: ElementType> UnionFind<Element> {
     /// Creates a new union-find of `size` elements.
     ///
     /// # Panics
     ///
-    /// If `size` elements would overflow the element type `E`.
+    /// If `size` elements would overflow the element type `Element`.
     pub fn new(size: usize) -> Self {
         UnionFind {
             elements: (0..size).map(|i| {
-                let e = E::from_usize(i).expect("UnionFind::new: overflow");
+                let e = Element::from_usize(i).expect("UnionFind::new: overflow");
                 Cell::new(e)
             }).collect(),
             ranks: vec![0; size],
@@ -56,9 +56,9 @@ impl<E: ElementType> UnionFind<E> {
     /// # Panics
     ///
     /// If allocating another element would overflow the element type
-    /// `E`.
-    pub fn alloc(&mut self) -> E {
-        let result = E::from_usize(self.elements.len())
+    /// `Element`.
+    pub fn alloc(&mut self) -> Element {
+        let result = Element::from_usize(self.elements.len())
                        .expect("UnionFind::alloc: overflow");
         self.elements.push(Cell::new(result));
         self.ranks.push(0);
@@ -70,7 +70,7 @@ impl<E: ElementType> UnionFind<E> {
     /// Returns whether anything changed. That is, if the sets were
     /// different, it returns `true`, but if they were already the same
     /// then it returns `false`.
-    pub fn union(&mut self, a: E, b: E) -> bool {
+    pub fn union(&mut self, a: Element, b: Element) -> bool {
         let a = self.find(a);
         let b = self.find(b);
 
@@ -92,7 +92,7 @@ impl<E: ElementType> UnionFind<E> {
     }
 
     /// Finds the representative element for the given element’s set.
-    pub fn find(&self, mut element: E) -> E {
+    pub fn find(&self, mut element: Element) -> Element {
         while element != self.parent(element) {
             self.set_parent(element, self.grandparent(element));
             element = self.parent(element);
@@ -102,7 +102,7 @@ impl<E: ElementType> UnionFind<E> {
     }
 
     /// Determines whether two elements are in the same set.
-    pub fn equiv(&self, a: E, b: E) -> bool {
+    pub fn equiv(&self, a: Element, b: Element) -> bool {
         self.find(a) == self.find(b)
     }
 
@@ -110,38 +110,38 @@ impl<E: ElementType> UnionFind<E> {
     /// set’s representative.
     pub fn force(&self) {
         for i in 0 .. self.len() {
-            self.find(E::from_usize(i).unwrap());
+            self.find(Element::from_usize(i).unwrap());
         }
     }
 
     /// Returns a vector of set representatives.
-    pub fn as_vec(&self) -> Vec<E> {
+    pub fn as_vec(&self) -> Vec<Element> {
         self.force();
         self.elements.iter().map(Cell::get).collect()
     }
 
     // HELPERS
 
-    fn rank(&self, element: E) -> u8 {
+    fn rank(&self, element: Element) -> u8 {
         self.ranks[element.to_usize()]
     }
 
-    fn increment_rank(&mut self, element: E) {
+    fn increment_rank(&mut self, element: Element) {
         let i = element.to_usize();
         let (rank, over) = self.ranks[i].overflowing_add(1);
         assert!(!over, "UnionFind: rank overflow");
         self.ranks[i] = rank;
     }
 
-    fn parent(&self, element: E) -> E {
+    fn parent(&self, element: Element) -> Element {
         self.elements[element.to_usize()].get()
     }
 
-    fn set_parent(&self, element: E, parent: E) {
+    fn set_parent(&self, element: Element, parent: Element) {
         self.elements[element.to_usize()].set(parent);
     }
 
-    fn grandparent(&self, element: E) -> E {
+    fn grandparent(&self, element: Element) -> Element {
         self.parent(self.parent(element))
     }
 
