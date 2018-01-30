@@ -7,8 +7,8 @@
 
 The variants are:
 
-| structure | element type | data? | concurrent? |
-| :-------: | :----------: | :---: | :---------: |
+|           | structure | element type | data? | concurrent? |
+| :-------- | :-------: | :----------: | :---: | :---------: |
 | [`UnionFind`](struct.UnionFind.html) | array | small integer | no | no |
 | [`UnionFindNode`](struct.UnionFindNode.html) | tree | tree node | yes | no |
 | [`AUnionFind`](struct.AUnionFind.html) | array | `usize` | no | yes |
