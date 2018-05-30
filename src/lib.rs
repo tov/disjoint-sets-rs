@@ -27,7 +27,7 @@
 //! extern crate disjoint_sets;
 //! ```
 //!
-//! This crate supports Rust version 1.13 and later.
+//! This crate supports Rust version 1.15 and later.
 //!
 //! # Examples
 //!
