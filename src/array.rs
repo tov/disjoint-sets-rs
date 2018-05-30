@@ -191,4 +191,23 @@ mod tests {
         uf.union(0, 7);
         assert!(uf.equiv(5, 7));
     }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn serde_round_trip() {
+        extern crate serde_json;
+
+        let mut uf0: UnionFind<usize> = UnionFind::new(8);
+        uf0.union(0, 1);
+        uf0.union(2, 3);
+        assert!( uf0.equiv(0, 1));
+        assert!(!uf0.equiv(1, 2));
+        assert!( uf0.equiv(2, 3));
+
+        let json = serde_json::to_string(&uf0).unwrap();
+        let uf1: UnionFind<usize> = serde_json::from_str(&json).unwrap();
+        assert!( uf1.equiv(0, 1));
+        assert!(!uf1.equiv(1, 2));
+        assert!( uf1.equiv(2, 3));
+    }
 }
