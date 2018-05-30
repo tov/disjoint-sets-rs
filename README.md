@@ -33,6 +33,8 @@ And add this to your crate root:
 extern crate disjoint_sets;
 ```
 
+This crate supports Rust version 1.7 and later.
+
 ## Examples
 
 Kruskal’s algorithm to find the minimum spanning tree of a graph:

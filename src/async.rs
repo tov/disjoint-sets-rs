@@ -1,4 +1,5 @@
 use std::fmt::{self, Debug};
+use std::marker::{Send, Sync};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 /// Concurrent union-find representing a set of disjoint sets.
@@ -10,6 +11,9 @@ pub struct AUnionFind {
     elements: Box<[AtomicUsize]>,
     ranks:    Box<[AtomicUsize]>,
 }
+
+unsafe impl Send for AUnionFind {}
+unsafe impl Sync for AUnionFind {}
 
 impl Clone for AUnionFind {
     fn clone(&self) -> Self {
@@ -70,7 +74,7 @@ impl AUnionFind {
     /// Returns whether anything changed. That is, if the sets were
     /// different, it returns `true`, but if they were already the same
     /// then it returns `false`.
-    pub fn union(&self, mut a: usize, mut b: usize) -> bool {
+    pub fn union(&self, a: usize, mut b: usize) -> bool {
         loop {
             a = self.find(a);
             b = self.find(b);
@@ -182,14 +186,23 @@ mod tests {
         assert!(uf.equiv(0, 4));
         assert!(!uf.equiv(0, 5));
 
-        uf.union(5, 3);
+        assert!(uf.union(5, 3));
         assert!(uf.equiv(0, 5));
 
-        uf.union(6, 7);
+        assert!(uf.union(6, 7));
         assert!(uf.equiv(6, 7));
         assert!(!uf.equiv(5, 7));
 
-        uf.union(0, 7);
+        assert!(uf.union(0, 7));
         assert!(uf.equiv(5, 7));
+    }
+
+    #[test]
+    fn changed() {
+        let uf = AUnionFind::new(8);
+        assert!(uf.union(2, 3));
+        assert!(uf.union(0, 1));
+        assert!(uf.union(1, 3));
+        assert!(!uf.union(0, 2))
     }
 }
