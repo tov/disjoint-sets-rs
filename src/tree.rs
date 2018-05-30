@@ -561,6 +561,9 @@ mod tests {
     #[derive(Debug)]
     struct Environment(HashMap<String, Variable>);
 
+    // The environment can get Rc-cycles in it (because we don’t do an
+    // occurs check, hence terms can be recursive). To avoid leaking, we
+    // need to clear the references out of it.
     impl Drop for Environment {
         fn drop(&mut self) {
             for (_, v) in self.0.drain() {

@@ -95,9 +95,13 @@ impl<Element: ElementType> UnionFind<Element> {
 
     /// Finds the representative element for the given element’s set.
     pub fn find(&self, mut element: Element) -> Element {
-        while element != self.parent(element) {
-            self.set_parent(element, self.grandparent(element));
-            element = self.parent(element);
+        let mut parent = self.parent(element);
+
+        while element != parent {
+            let grandparent = self.parent(parent);
+            self.set_parent(element, grandparent);
+            element = parent;
+            parent = grandparent;
         }
 
         element
@@ -142,11 +146,6 @@ impl<Element: ElementType> UnionFind<Element> {
     fn set_parent(&self, element: Element, parent: Element) {
         self.elements[element.to_usize()].set(parent);
     }
-
-    fn grandparent(&self, element: Element) -> Element {
-        self.parent(self.parent(element))
-    }
-
 }
 
 #[cfg(test)]
