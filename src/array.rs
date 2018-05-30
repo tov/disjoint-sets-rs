@@ -131,9 +131,7 @@ impl<Element: ElementType> UnionFind<Element> {
 
     fn increment_rank(&mut self, element: Element) {
         let i = element.to_usize();
-        let (rank, over) = self.ranks[i].overflowing_add(1);
-        assert!(!over, "UnionFind: rank overflow");
-        self.ranks[i] = rank;
+        self.ranks[i] = self.ranks[i].saturating_add(1);
     }
 
     fn parent(&self, element: Element) -> Element {
