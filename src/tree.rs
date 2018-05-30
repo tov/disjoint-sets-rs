@@ -328,12 +328,12 @@ impl<Data> UnionFindNode<Data> {
         }
 
         if rank_a > rank_b {
-            b.set_parent_with(a, |b_data, a_data| f(a_data, b_data))
+            b.set_parent_with(&a, |b_data, a_data| f(a_data, b_data))
         } else if rank_b > rank_a {
-            a.set_parent_with(b, f)
+            a.set_parent_with(&b, f)
         } else {
             b.increment_rank();
-            a.set_parent_with(b, f)
+            a.set_parent_with(&b, f)
         }
 
         true
@@ -442,7 +442,7 @@ impl<Data> UnionFindNode<Data> {
     // PRECONDITION:
     //  - self != parent
     //  - self and parent are both root nodes
-    fn set_parent_with<F>(&self, parent: Self, f: F)
+    fn set_parent_with<F>(&self, parent: &Self, f: F)
             where F: FnOnce(Data, Data) -> Data {
         let mut guard_self = self.0.borrow_mut();
         let mut guard_parent = parent.0.borrow_mut();
