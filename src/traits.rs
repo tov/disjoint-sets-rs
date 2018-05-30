@@ -6,12 +6,12 @@ use std::fmt::Debug;
 ///
 /// The two methods must be well-behaved partial inverses as follows:
 ///
-/// -  For all `f: usize`, if `f::from_usize()` = `Some(t)` then
-///    `t::to_usize()` = `f`.
-/// -  For all `f: Self`, if `f::to_usize()` = `t` then
-///    `t::from_usize()` = `Some(f)`.
-/// -  For all `f: usize`, if `f::from_usize()` = `None` then for all `g:
-///    usize` such that `g > f`, `g::from_usize()` = `None`.
+/// -  For all `n: usize`, if `Self::from_usize(n)` = `Some(t)` then
+///    `Self::to_usize(t)` = `n`.
+/// -  For all `t: Self`, if `Self::to_usize(t)` = `n` then
+///    `Self::from_usize(n)` = `Some(t)`.
+/// -  For all `n: usize`, if `Self::from_usize(n)` = `None` then for all `m:
+///    usize` such that `m > n`, `Self::from_usize(m)` = `None`.
 ///
 /// In other words, `ElementType` sets up a bijection between the first
 /// *k* `usize` values and some *k* values of the `Self` type.
@@ -20,7 +20,7 @@ pub trait ElementType : Copy + Debug + Eq {
     ///
     /// Returns `None` if the argument won’t fit in `Self`.
     #[inline]
-    fn from_usize(usize) -> Option<Self>;
+    fn from_usize(n: usize) -> Option<Self>;
 
     /// Converts from the element type to `usize`.
     #[inline]
