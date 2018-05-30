@@ -120,8 +120,14 @@ impl AUnionFind {
     }
 
     /// Determines whether two elements are in the same set.
-    pub fn equiv(&self, a: usize, b: usize) -> bool {
-        self.find(a) == self.find(b)
+    pub fn equiv(&self, mut a: usize, mut b: usize) -> bool {
+        loop {
+            a = self.find(a);
+            b = self.find(b);
+
+            if a == b { return true; }
+            if self.parent(a) == a { return false; }
+        }
     }
 
     /// Forces all laziness, so that each element points directly to its
