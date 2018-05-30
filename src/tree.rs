@@ -236,6 +236,7 @@ use std::mem;
 ///                         term![ (a   A   D   C   (g)) ]));
 /// }
 /// ```
+#[derive(Default)]
 pub struct UnionFindNode<Data = ()>(Rc<RefCell<NodeImpl<Data>>>);
 
 enum NodeImpl<Data> {
@@ -252,6 +253,12 @@ use self::NodeImpl::*;
 impl<Data> UnionFindNode<Data> {
     fn id(&self) -> usize {
         &*self.0 as *const _ as usize
+    }
+}
+
+impl<Data> Clone for UnionFindNode<Data> {
+    fn clone(&self) -> Self {
+        UnionFindNode(Rc::clone(&self.0))
     }
 }
 
@@ -287,15 +294,18 @@ impl<Data> Hash for UnionFindNode<Data> {
     }
 }
 
-impl<Data> Clone for UnionFindNode<Data> {
-    fn clone(&self) -> Self {
-        UnionFindNode(self.0.clone())
+impl<Data: Default> Default for NodeImpl<Data> {
+    fn default() -> Self {
+        Self::new(Data::default())
     }
 }
 
-impl<Data: Default> Default for UnionFindNode<Data> {
-    fn default() -> Self {
-        UnionFindNode::new(Default::default())
+impl<Data> NodeImpl<Data> {
+    fn new(data: Data) -> Self {
+        Root {
+            data: data,
+            rank: 0,
+        }
     }
 }
 
@@ -305,10 +315,7 @@ impl<Data> UnionFindNode<Data> {
     /// Initially this set is disjoint from all other sets, but can
     /// be joined with other sets using [`union`](#method.union).
     pub fn new(data: Data) -> Self {
-        UnionFindNode(Rc::new(RefCell::new(Root {
-            data: data,
-            rank: 0,
-        })))
+        UnionFindNode(Rc::new(RefCell::new(NodeImpl::new(data))))
     }
 
     /// Unions two sets, combining their data as specified.
