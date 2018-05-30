@@ -2,11 +2,15 @@ use std::fmt::{self, Debug};
 use std::marker::{Send, Sync};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+#[cfg(feature = "serde")]
+use serde::{Serialize, Serializer, Deserialize, Deserializer};
+
 /// Lock-free, concurrent union-find representing a set of disjoint sets.
 ///
 /// # Warning
 ///
 /// I don’t yet have good reason to believe that this is correct.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct AUnionFind(Box<[Entry]>);
 
 struct Entry {
@@ -177,6 +181,79 @@ impl AUnionFind {
                                             new_parent,
                                             Ordering::SeqCst)
             == old_parent
+    }
+}
+
+#[cfg(feature = "serde")]
+impl Serialize for Entry {
+    fn serialize<S: Serializer>(&self, serializer: S)
+                                -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    {
+        use serde::ser::SerializeStruct;
+
+        let mut tuple = serializer.serialize_struct("Entry", 2)?;
+        tuple.serialize_field("id", &self.id.load(Ordering::Relaxed))?;
+        tuple.serialize_field("rank", &self.rank.load(Ordering::Relaxed))?;
+        tuple.end()
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for Entry {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        use serde::de::{self, Visitor, SeqAccess, MapAccess};
+
+        #[derive(Deserialize)]
+        #[serde(field_identifier, rename_all = "lowercase")]
+        enum Field { Id, Rank, }
+
+        struct EntryVisitor;
+
+        impl<'de> Visitor<'de> for EntryVisitor {
+            type Value = Entry;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct Entry")
+            }
+
+            fn visit_seq<V: SeqAccess<'de>>(self, mut seq: V) -> Result<Self::Value, V::Error> {
+                let id = seq.next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(0, &self))?;
+                let rank = seq.next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                Ok(Entry::new(id, rank))
+            }
+
+            fn visit_map<V: MapAccess<'de>>(self, mut map: V) -> Result<Self::Value, V::Error> {
+                let mut id   = None;
+                let mut rank = None;
+
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::Id => {
+                            if id.is_some() {
+                                return Err(de::Error::duplicate_field("id"));
+                            }
+                            id = Some(map.next_value()?);
+                        }
+                        Field::Rank => {
+                            if rank.is_some() {
+                                return Err(de::Error::duplicate_field("rank"));
+                            }
+                            rank = Some(map.next_value()?);
+                        }
+                    }
+                }
+
+                let id   = id.ok_or_else(|| de::Error::missing_field("id"))?;
+                let rank = rank.ok_or_else(|| de::Error::missing_field("rank"))?;
+
+                Ok(Entry::new(id, rank))
+            }
+        }
+
+        const FIELDS: &'static [&'static str] = &["id", "rank"];
+        deserializer.deserialize_struct("Entry", FIELDS, EntryVisitor)
     }
 }
 
