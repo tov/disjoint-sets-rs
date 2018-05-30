@@ -251,7 +251,7 @@ enum NodeImpl<Data> {
 use self::NodeImpl::*;
 
 impl<Data> UnionFindNode<Data> {
-    fn id(&self) -> usize {
+    fn addr(&self) -> usize {
         &*self.0 as *const _ as usize
     }
 }
@@ -270,7 +270,7 @@ impl<Data> Debug for UnionFindNode<Data> {
 
 impl<Data> PartialEq for UnionFindNode<Data> {
     fn eq(&self, other: &UnionFindNode<Data>) -> bool {
-        self.id() == other.id()
+        self.addr() == other.addr()
     }
 }
 
@@ -284,13 +284,13 @@ impl<Data> PartialOrd for UnionFindNode<Data> {
 
 impl<Data> Ord for UnionFindNode<Data> {
     fn cmp(&self, other: &UnionFindNode<Data>) -> Ordering {
-        self.id().cmp(&other.id())
+        self.addr().cmp(&other.addr())
     }
 }
 
 impl<Data> Hash for UnionFindNode<Data> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.id().hash(state)
+        self.addr().hash(state)
     }
 }
 
