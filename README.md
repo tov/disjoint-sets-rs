@@ -9,9 +9,9 @@ The variants are:
 
 |           | structure | element type | data? | concurrent? |
 | :-------- | :-------: | :----------: | :---: | :---------: |
-| [`UnionFind`](struct.UnionFind.html) | vector | small integer | no | no |
-| [`UnionFindNode`](struct.UnionFindNode.html) | tree | tree node | yes | no |
-| [`AUnionFind`](struct.AUnionFind.html) | array | `usize` | no | yes |
+| `UnionFind` | vector | small integer | no | no |
+| `UnionFindNode` | tree | tree node | yes | no |
+| `AUnionFind` | array | `usize` | no | yes |
 
 All three perform rank-balanced path compression à la Tarjan,
 using interior mutability.
