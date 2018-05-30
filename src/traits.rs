@@ -7,11 +7,11 @@ use std::fmt::Debug;
 /// The two methods must be well-behaved partial inverses as follows:
 ///
 /// -  For all `n: usize`, if `Self::from_usize(n)` = `Some(t)` then
-///    `Self::to_usize(t)` = `n`.
-/// -  For all `t: Self`, if `Self::to_usize(t)` = `n` then
+///    `t.to_usize()` = `n`.
+/// -  For all `t: Self`, if `t.to_usize()` = `n` then
 ///    `Self::from_usize(n)` = `Some(t)`.
-/// -  For all `n: usize`, if `Self::from_usize(n)` = `None` then for all `m:
-///    usize` such that `m > n`, `Self::from_usize(m)` = `None`.
+/// -  For all `n: usize`, if `Self::from_usize(n)` = `None` then for all
+///    `m: usize` such that `m > n`, `Self::from_usize(m)` = `None`.
 ///
 /// In other words, `ElementType` sets up a bijection between the first
 /// *k* `usize` values and some *k* values of the `Self` type.
