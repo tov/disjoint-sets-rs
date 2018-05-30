@@ -1,4 +1,4 @@
-#![doc(html_root_url = "https://docs.rs/disjoint-sets/0.4.0")]
+#![doc(html_root_url = "https://docs.rs/disjoint-sets/0.4.2")]
 //! Three union-find implementations.
 //!
 //! The variants are:
@@ -19,7 +19,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! disjoint-sets = "0.4"
+//! disjoint-sets = "0.4.2"
 //! ```
 //!
 //! And add this to your crate root:
