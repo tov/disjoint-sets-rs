@@ -134,12 +134,22 @@ impl AUnionFind {
     /// set’s representative.
     pub fn force(&self) {
         for i in 0 .. self.len() {
-            self.find(i);
+            loop {
+                let parent = self.parent(i);
+                if i == parent {
+                    break
+                } else {
+                    let root = self.find(parent);
+                    if parent == root || self.change_parent(i, parent, root) {
+                        break;
+                    }
+                }
+            }
         }
     }
 
     /// Returns a vector of set representatives.
-    pub fn as_vec(&self) -> Vec<usize> {
+    pub fn to_vec(&self) -> Vec<usize> {
         self.force();
         self.0.iter().map(|entry| entry.id.load(Ordering::SeqCst)).collect()
     }
@@ -191,7 +201,7 @@ mod tests {
     fn unions() {
         let uf = AUnionFind::new(8);
         assert!(uf.union(0, 1));
-        assert!(uf.union(1, 2));
+
         assert!(uf.union(4, 3));
         assert!(uf.union(3, 2));
         assert!(! uf.union(0, 3));
@@ -220,5 +230,19 @@ mod tests {
         assert!(uf.union(0, 1));
         assert!(uf.union(1, 3));
         assert!(!uf.union(0, 2))
+    }
+
+    // This assumes that for equal-ranked roots, the first argument
+    // to union is pointed to the second.
+    #[test]
+    fn to_vec() {
+        let uf = AUnionFind::new(6);
+        assert_eq!(uf.to_vec(), vec![0, 1, 2, 3, 4, 5]);
+        uf.union(0, 1);
+        assert_eq!(uf.to_vec(), vec![1, 1, 2, 3, 4, 5]);
+        uf.union(2, 3);
+        assert_eq!(uf.to_vec(), vec![1, 1, 3, 3, 4, 5]);
+        uf.union(1, 3);
+        assert_eq!(uf.to_vec(), vec![3, 3, 3, 3, 4, 5]);
     }
 }
