@@ -2,7 +2,7 @@ use std::fmt::{self, Debug};
 use std::marker::{Send, Sync};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-/// Concurrent union-find representing a set of disjoint sets.
+/// Lock-free, concurrent union-find representing a set of disjoint sets.
 ///
 /// # Warning
 ///
