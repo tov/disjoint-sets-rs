@@ -201,6 +201,7 @@ mod tests {
     fn unions() {
         let uf = AUnionFind::new(8);
         assert!(uf.union(0, 1));
+        assert!(uf.union(1, 2));
 
         assert!(uf.union(4, 3));
         assert!(uf.union(3, 2));

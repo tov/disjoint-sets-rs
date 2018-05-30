@@ -110,12 +110,14 @@ impl<Element: ElementType> UnionFind<Element> {
     /// set’s representative.
     pub fn force(&self) {
         for i in 0 .. self.len() {
-            self.find(Element::from_usize(i).unwrap());
+            let element = Element::from_usize(i).unwrap();
+            let root = self.find(element);
+            self.set_parent(element, root);
         }
     }
 
     /// Returns a vector of set representatives.
-    pub fn as_vec(&self) -> Vec<Element> {
+    pub fn to_vec(&self) -> Vec<Element> {
         self.force();
         self.elements.iter().map(Cell::get).collect()
     }
