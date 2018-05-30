@@ -18,7 +18,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! disjoint-sets = "0.3"
+//! disjoint-sets = "0.4"
 //! ```
 //!
 //! And add this to your crate root:
