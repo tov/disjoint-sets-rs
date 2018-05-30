@@ -9,6 +9,7 @@ pub struct UnionFind<Element: ElementType = usize> {
     elements: Vec<Cell<Element>>,
     ranks: Vec<u8>,
 }
+// Invariant: self.elements.len() == self.ranks.len()
 
 impl<Element: Debug + ElementType> Debug for UnionFind<Element> {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
