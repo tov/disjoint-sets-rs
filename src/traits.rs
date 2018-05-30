@@ -19,11 +19,9 @@ pub trait ElementType : Copy + Debug + Eq {
     /// Converts from `usize` to the element type.
     ///
     /// Returns `None` if the argument won’t fit in `Self`.
-    #[inline]
     fn from_usize(n: usize) -> Option<Self>;
 
     /// Converts from the element type to `usize`.
-    #[inline]
     fn to_usize(self) -> usize;
 }
 
