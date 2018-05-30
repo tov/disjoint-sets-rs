@@ -10,6 +10,7 @@ use serde::{Serialize, Serializer, Deserialize, Deserializer};
 /// # Warning
 ///
 /// I don’t yet have good reason to believe that this is correct.
+#[derive(Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct AUnionFind(Box<[Entry]>);
 
@@ -21,18 +22,10 @@ struct Entry {
 unsafe impl Send for AUnionFind {}
 unsafe impl Sync for AUnionFind {}
 
-impl Clone for AUnionFind {
+impl Clone for Entry {
     fn clone(&self) -> Self {
-        fn copy_slice(slice: &[Entry]) -> Box<[Entry]> {
-            let mut vec = Vec::with_capacity(slice.len());
-            for entry in slice {
-                vec.push(Entry::new(entry.id.load(Ordering::SeqCst),
-                                    entry.rank.load(Ordering::SeqCst)));
-            }
-            vec.into_boxed_slice()
-        }
-
-        AUnionFind(copy_slice(&*self.0))
+        Entry::new(self.id.load(Ordering::SeqCst),
+                   self.rank.load(Ordering::SeqCst))
     }
 }
 
