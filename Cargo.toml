@@ -4,11 +4,6 @@ version = "0.3.4"
 authors = ["Jesse A. Tov <jesse.tov@gmail.com>"]
 description = "Three union-find implementations"
 repository = "https://github.com/tov/disjoint-sets-rs"
-homepage = "https://github.com/tov/disjoint-sets-rs"
-documentation = "http://tov.github.io/disjoint-sets-rs/"
 readme = "README.md"
 license = "MIT/Apache-2.0"
 keywords = ["union-find", "Tarjan"]
-
-[dependencies]
-clippy = { version = "0", optional = true }
