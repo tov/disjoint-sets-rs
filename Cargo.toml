@@ -9,6 +9,9 @@ license = "MIT/Apache-2.0"
 keywords = ["union-find", "Tarjan"]
 categories = ["data-structures"]
 
+[badges]
+travis-ci = { repository = "tov/disjoint-sets-rs" }
+
 [dependencies]
 serde = { version = "1.0", optional = true, features = ["derive"] }
 
