@@ -3,8 +3,9 @@ use std::fmt::{self, Debug};
 
 use super::ElementType;
 
-/// Array-based union-find representing a set of disjoint sets.
+/// Vector-based union-find representing a set of disjoint sets.
 #[derive(Clone)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct UnionFind<Element: ElementType = usize> {
     elements: Vec<Cell<Element>>,
     ranks: Vec<u8>,

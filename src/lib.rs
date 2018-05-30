@@ -2,13 +2,13 @@
 //!
 //! The variants are:
 //!
-//!    | structure | element type | data? | concurrent? |
-//! ---| :-------: | :----------: | :---: | :---------: |
-//!  [`UnionFind`](struct.UnionFind.html) | array | small integer | no | no
-//!  [`UnionFindNode`](struct.UnionFindNode.html) | tree | tree node | yes | no
-//!  [`AUnionFind`](struct.AUnionFind.html) | array | `usize` | no | yes
+//! |           | structure | element type | data? | concurrent? |
+//! | :-------- | :-------- | :----------- | :---- | :---------- |
+//! | [`UnionFind`](struct.UnionFind.html) | vector | small integer | no | no |
+//! | [`UnionFindNode`](struct.UnionFindNode.html) | tree | tree node | yes | no |
+//! | [`AUnionFind`](struct.AUnionFind.html) | array | `usize` | no | yes |
 //!
-//! All three perform rank-balanced path compression à la Tarjan,
+//! All three perform rank-balanced path halving à la Tarjan,
 //! using interior mutability.
 //!
 //! # Usage
@@ -121,8 +121,9 @@
 
 #![warn(missing_docs)]
 
-#![cfg_attr(feature = "clippy", feature(plugin))]
-#![cfg_attr(feature = "clippy", plugin(clippy))]
+#[cfg(feature = "serde")]
+#[macro_use]
+extern crate serde;
 
 mod traits;
 mod array;

@@ -9,7 +9,7 @@ The variants are:
 
 |           | structure | element type | data? | concurrent? |
 | :-------- | :-------: | :----------: | :---: | :---------: |
-| [`UnionFind`](struct.UnionFind.html) | array | small integer | no | no |
+| [`UnionFind`](struct.UnionFind.html) | vector | small integer | no | no |
 | [`UnionFindNode`](struct.UnionFindNode.html) | tree | tree node | yes | no |
 | [`AUnionFind`](struct.AUnionFind.html) | array | `usize` | no | yes |
 
