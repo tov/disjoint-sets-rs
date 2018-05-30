@@ -7,9 +7,11 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 /// # Warning
 ///
 /// I don’t yet have good reason to believe that this is correct.
-pub struct AUnionFind {
-    elements: Box<[AtomicUsize]>,
-    ranks:    Box<[AtomicUsize]>,
+pub struct AUnionFind(Box<[Entry]>);
+
+struct Entry {
+    id:   AtomicUsize,
+    rank: AtomicUsize,
 }
 
 unsafe impl Send for AUnionFind {}
@@ -17,24 +19,25 @@ unsafe impl Sync for AUnionFind {}
 
 impl Clone for AUnionFind {
     fn clone(&self) -> Self {
-        fn copy_slice(slice: &[AtomicUsize]) -> Box<[AtomicUsize]> {
+        fn copy_slice(slice: &[Entry]) -> Box<[Entry]> {
             let mut vec = Vec::with_capacity(slice.len());
-            for atomic in slice {
-                vec.push(AtomicUsize::new(atomic.load(Ordering::Relaxed)));
+            for entry in slice {
+                vec.push(Entry::new(entry.id.load(Ordering::SeqCst),
+                                    entry.rank.load(Ordering::SeqCst)));
             }
             vec.into_boxed_slice()
         }
 
-        AUnionFind {
-            elements: copy_slice(&*self.elements),
-            ranks: copy_slice(&*self.ranks),
-        }
+        AUnionFind(copy_slice(&*self.0))
     }
 }
 
 impl Debug for AUnionFind {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        write!(formatter, "AUnionFind({:?})", self.elements)
+        write!(formatter, "AUnionFind(")?;
+        formatter.debug_list()
+            .entries(self.0.iter().map(|entry| &entry.id)).finish()?;
+        write!(formatter, ")")
     }
 }
 
@@ -44,20 +47,27 @@ impl Default for AUnionFind {
     }
 }
 
+impl Entry {
+    fn new(id: usize, rank: usize) -> Self {
+        Entry {
+            id:   AtomicUsize::new(id),
+            rank: AtomicUsize::new(rank),
+        }
+    }
+}
+
 impl AUnionFind {
     /// Creates a new asynchronous union-find of `size` elements.
     pub fn new(size: usize) -> Self {
-        let elements = (0..size).map(AtomicUsize::new).collect::<Vec<_>>();
-        let ranks = (0..size).map(|_| AtomicUsize::new(0)).collect::<Vec<_>>();
-        AUnionFind {
-            elements: elements.into_boxed_slice(),
-            ranks:    ranks.into_boxed_slice(),
-        }
+        AUnionFind((0..size)
+            .map(|i| Entry::new(i, 0))
+            .collect::<Vec<_>>()
+            .into_boxed_slice())
     }
 
     /// The number of elements in all the sets.
     pub fn len(&self) -> usize {
-        self.elements.len()
+        self.0.len()
     }
 
     /// Is the union-find devoid of elements?
@@ -66,7 +76,7 @@ impl AUnionFind {
     /// [`UnionFind`](struct.UnionFind.html) it is not possible to add
     /// elements.
     pub fn is_empty(&self) -> bool {
-        self.elements.is_empty()
+        self.0.is_empty()
     }
 
     /// Joins the sets of the two given elements.
@@ -74,7 +84,7 @@ impl AUnionFind {
     /// Returns whether anything changed. That is, if the sets were
     /// different, it returns `true`, but if they were already the same
     /// then it returns `false`.
-    pub fn union(&self, a: usize, mut b: usize) -> bool {
+    pub fn union(&self, mut a: usize, mut b: usize) -> bool {
         loop {
             a = self.find(a);
             b = self.find(b);
@@ -125,21 +135,21 @@ impl AUnionFind {
     /// Returns a vector of set representatives.
     pub fn as_vec(&self) -> Vec<usize> {
         self.force();
-        self.elements.iter().map(|v| v.load(Ordering::SeqCst)).collect()
+        self.0.iter().map(|entry| entry.id.load(Ordering::SeqCst)).collect()
     }
 
     // HELPERS
 
     fn rank(&self, element: usize) -> usize {
-        self.ranks[element].load(Ordering::SeqCst)
+        self.0[element].rank.load(Ordering::SeqCst)
     }
 
     fn increment_rank(&self, element: usize) {
-        self.ranks[element].fetch_add(1, Ordering::SeqCst);
+        self.0[element].rank.fetch_add(1, Ordering::SeqCst);
     }
 
     fn parent(&self, element: usize) -> usize {
-        self.elements[element].load(Ordering::SeqCst)
+        self.0[element].id.load(Ordering::SeqCst)
     }
 
     fn change_parent(&self,
@@ -147,9 +157,9 @@ impl AUnionFind {
                      old_parent: usize,
                      new_parent: usize)
                      -> bool {
-        self.elements[element].compare_and_swap(old_parent,
-                                                new_parent,
-                                                Ordering::SeqCst)
+        self.0[element].id.compare_and_swap(old_parent,
+                                            new_parent,
+                                            Ordering::SeqCst)
             == old_parent
     }
 }
