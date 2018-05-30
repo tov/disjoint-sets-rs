@@ -26,7 +26,9 @@ pub trait ElementType : Copy + Debug + Eq {
 }
 
 impl ElementType for usize {
+    #[inline]
     fn from_usize(n: usize) -> Option<usize> { Some(n) }
+    #[inline]
     fn to_usize(self) -> usize { self }
 }
 
