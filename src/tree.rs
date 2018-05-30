@@ -7,7 +7,7 @@ use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 use std::mem;
 
-/// Tree-based union-find representing disjoint sets with associated data.
+/// Pointer-based union-find representing disjoint sets with associated data.
 ///
 /// This union-find implementation uses nodes to represent set elements
 /// in a parent-pointer tree. Each set has associated with it an object
