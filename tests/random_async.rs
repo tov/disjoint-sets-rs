@@ -69,15 +69,11 @@ impl Tester {
         for script in &multi_script.0 {
             for cmd in &script.0 {
                 match *cmd {
-                    Cmd::Union(i, j) => {
+                    Cmd::Union(i, j) =>
                         if self.sequential.union(i, j) {
                             self.set_count -= 1;
                         }
-                    }
-                    Cmd::Find(i)     => {
-                        self.sequential.find(i);
-                        ()
-                    }
+                    Cmd::Find(i)     => ignore( self.sequential.find(i) ),
                 }
             }
         }
@@ -90,14 +86,8 @@ impl Tester {
             handles.push(thread::spawn(move || {
                 for cmd in script.0 {
                     match cmd {
-                        Cmd::Union(i, j) => {
-                            uf.union(i, j);
-                            ()
-                        }
-                        Cmd::Find(i)     => {
-                            uf.find(i);
-                            ()
-                        }
+                        Cmd::Union(i, j) => ignore( uf.union(i, j) ),
+                        Cmd::Find(i)     => ignore( uf.find(i) ),
                     }
                 }
             }));
@@ -108,6 +98,8 @@ impl Tester {
         }
     }
 }
+
+fn ignore<T>(_: T) {}
 
 // Multiple scripts, one for each thread.
 #[derive(Clone, Debug)]
