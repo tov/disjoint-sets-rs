@@ -11,13 +11,13 @@ use std::sync::Arc;
 use std::thread;
 
 // The length of the union-find we'll test on.
-const UF_LEN: usize   = 500;
+const UF_LEN: usize = 100;
 
 // The percentage of commands that should be finds; the rest are unions.
 const FIND_PCT: usize = 80;
 
 // The maximum length of each generated script.
-const MAX_SCRIPT_LEN: usize = 250;
+const MAX_SCRIPT_LEN: usize = 200;
 
 // The number of threads to start.
 const CONCURRENCY: usize = 10;
@@ -35,6 +35,7 @@ quickcheck! {
 struct Tester {
     concurrent: Arc<AUnionFind>,
     sequential: UnionFind<usize>,
+    set_count:  usize,
 }
 
 impl Tester {
@@ -43,11 +44,14 @@ impl Tester {
         Tester {
             concurrent: Arc::new(AUnionFind::new(UF_LEN)),
             sequential: UnionFind::new(UF_LEN),
+            set_count:  UF_LEN,
         }
     }
 
     // Checks that the two union-finds in the tester are equivalent.
     fn check(&self) -> bool {
+//        eprintln!("set_count: {}", self.set_count);
+
         for i in 0 .. UF_LEN {
             for j in 0 .. UF_LEN {
                 if self.concurrent.equiv(i, j) != self.sequential.equiv(i, j) {
@@ -66,8 +70,9 @@ impl Tester {
             for cmd in &script.0 {
                 match *cmd {
                     Cmd::Union(i, j) => {
-                        self.sequential.union(i, j);
-                        ()
+                        if self.sequential.union(i, j) {
+                            self.set_count -= 1;
+                        }
                     }
                     Cmd::Find(i)     => {
                         self.sequential.find(i);
@@ -124,7 +129,7 @@ impl Arbitrary for MultiScript {
         let mut result = Vec::with_capacity(CONCURRENCY);
 
         for _ in 0 .. CONCURRENCY {
-            result.push(Script::arbitrary(g))
+            result.push(Script::arbitrary(g));
         }
 
         MultiScript(result)
