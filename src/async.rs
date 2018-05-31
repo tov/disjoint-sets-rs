@@ -24,8 +24,8 @@ unsafe impl Sync for AUnionFind {}
 
 impl Clone for Entry {
     fn clone(&self) -> Self {
-        Entry::new(self.id.load(Ordering::SeqCst),
-                   self.rank.load(Ordering::SeqCst))
+        Entry::with_rank(self.id.load(Ordering::SeqCst),
+                         self.rank.load(Ordering::SeqCst))
     }
 }
 
@@ -45,7 +45,11 @@ impl Default for AUnionFind {
 }
 
 impl Entry {
-    fn new(id: usize, rank: usize) -> Self {
+    fn new(id: usize) -> Self {
+        Self::with_rank(id, 0)
+    }
+
+    fn with_rank(id: usize, rank: usize) -> Self {
         Entry {
             id:   AtomicUsize::new(id),
             rank: AtomicUsize::new(rank),
@@ -57,7 +61,7 @@ impl AUnionFind {
     /// Creates a new asynchronous union-find of `size` elements.
     pub fn new(size: usize) -> Self {
         AUnionFind((0..size)
-            .map(|i| Entry::new(i, 0))
+            .map(Entry::new)
             .collect::<Vec<_>>()
             .into_boxed_slice())
     }
@@ -214,7 +218,7 @@ impl<'de> Deserialize<'de> for Entry {
                     .ok_or_else(|| de::Error::invalid_length(0, &self))?;
                 let rank = seq.next_element()?
                     .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                Ok(Entry::new(id, rank))
+                Ok(Entry::with_rank(id, rank))
             }
 
             fn visit_map<V: MapAccess<'de>>(self, mut map: V) -> Result<Self::Value, V::Error> {
@@ -241,7 +245,7 @@ impl<'de> Deserialize<'de> for Entry {
                 let id   = id.ok_or_else(|| de::Error::missing_field("id"))?;
                 let rank = rank.ok_or_else(|| de::Error::missing_field("rank"))?;
 
-                Ok(Entry::new(id, rank))
+                Ok(Entry::with_rank(id, rank))
             }
         }
 
