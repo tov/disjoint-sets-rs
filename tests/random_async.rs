@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 extern crate disjoint_sets;
 
 #[macro_use]
