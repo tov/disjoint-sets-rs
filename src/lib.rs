@@ -36,6 +36,7 @@
 //!
 //! ```
 //! use disjoint_sets::UnionFind;
+//! use std::collections::HashSet;
 //!
 //! type Node = usize;
 //! type Weight = usize;
@@ -60,14 +61,13 @@
 //!     edges
 //! }
 //!
-//! fn mst(graph: &Graph) -> Vec<(Node, Node)> {
-//!     let mut result = vec![];
+//! fn mst(graph: &Graph) -> HashSet<(Node, Node)> {
+//!     let mut result = HashSet::new();
 //!     let mut uf = UnionFind::new(graph.len());
 //!
 //!     for (src, dst, _) in edges_by_weight(graph) {
-//!         if !uf.equiv(src, dst) {
-//!             uf.union(src, dst);
-//!             result.push((src, dst));
+//!         if uf.union(src, dst) {
+//!             result.insert((src, dst));
 //!         }
 //!     }
 //!
@@ -113,9 +113,10 @@
 //!     ];
 //!
 //!     assert_eq! {
+//!         mst(&graph),
 //!         vec![ (1, 4), (4, 5), (3, 6), (2, 5),
-//!               (0, 1), (3, 4), (6, 7), (7, 8), ],
-//!         mst(&graph)
+//!               (0, 1), (3, 4), (6, 7), (7, 8), ]
+//!              .into_iter().collect::<HashSet<_>>()
 //!     };
 //! }
 //! ```
