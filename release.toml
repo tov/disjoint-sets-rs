@@ -1,5 +1,6 @@
 pre-release-replacements = [
   { file="README.md", search="disjoint-sets = \"[0-9.]*\"", replace="disjoint-sets = \"{{version}}\"" },
   { file="src/lib.rs", search="disjoint-sets = \"[0-9.]*\"", replace="disjoint-sets = \"{{version}}\"" },
-  { file="src/lib.rs", search="https://docs[.]rs/disjoint-sets/[0-9.]*", replace="https://docs.rs/disjoint-sets/{{version}}" }
+  { file="src/lib.rs", search="https://docs[.]rs/disjoint-sets/[0-9.]*", replace="https://docs.rs/disjoint-sets/{{version}}" },
+  { file="CHANGELOG.md", search="\\[Unreleased\\]", replace="[{{version}}] - {{date}}" }
 ]
