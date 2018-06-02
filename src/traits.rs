@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
-/// A type that can be used as a union-find element.
+/// A type that can be used as a [`UnionFind`](struct.UnionFind.html)
+/// element.
 ///
 /// It must be safely convertible to and from `usize`.
 ///
