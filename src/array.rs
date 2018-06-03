@@ -4,6 +4,9 @@ use std::fmt::{self, Debug};
 use super::ElementType;
 
 /// Vector-based union-find representing a set of disjoint sets.
+///
+/// If configured with Cargo feature `"serde"`, impls for `Serialize`
+/// and `Deserialize` will be defined.
 #[derive(Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct UnionFind<Element: ElementType = usize> {

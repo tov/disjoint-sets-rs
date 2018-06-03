@@ -30,6 +30,9 @@
 //!
 //! This crate supports Rust version 1.21 and later.
 //!
+//! Pass Cargo feature `"serde"` to enable serialization and deserialization
+//! for `UnionFind` and `AUnionFind`.
+//!
 //! # Examples
 //!
 //! Kruskal’s algorithm to find the minimum spanning tree of a graph:

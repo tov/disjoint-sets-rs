@@ -7,6 +7,11 @@ use serde::{Serialize, Serializer, Deserialize, Deserializer};
 
 /// Lock-free, concurrent union-find representing a set of disjoint sets.
 ///
+/// If configured with Cargo feature `"serde"`, impls for `Serialize`
+/// and `Deserialize` will be defined. Note that if the union-find is
+/// modified while being serialized, the view of the structure
+/// preserved by may not correspond to any particular moment in time.
+///
 /// # Warning
 ///
 /// I don’t yet have good reason to believe that this is correct.
