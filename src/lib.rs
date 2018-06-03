@@ -130,10 +130,10 @@ extern crate serde;
 mod traits;
 mod array;
 mod tree;
-mod async;
+mod concurrent;
 
-pub use traits::*;
-pub use array::*;
-pub use tree::*;
-pub use async::*;
+pub use traits::ElementType;
+pub use array::UnionFind;
+pub use tree::UnionFindNode;
+pub use concurrent::AUnionFind;
 
