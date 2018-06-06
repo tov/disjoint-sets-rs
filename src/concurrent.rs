@@ -24,9 +24,6 @@ struct Entry {
     rank: AtomicUsize,
 }
 
-unsafe impl Send for AUnionFind {}
-unsafe impl Sync for AUnionFind {}
-
 impl Clone for Entry {
     fn clone(&self) -> Self {
         Entry::with_rank(self.id.load(Ordering::SeqCst),
