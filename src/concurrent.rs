@@ -1,5 +1,4 @@
 use std::fmt::{self, Debug};
-use std::marker::{Send, Sync};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 #[cfg(feature = "serde")]
