@@ -13,7 +13,8 @@ use serde::{Serialize, Serializer, Deserialize, Deserializer};
 ///
 /// # Warning
 ///
-/// I don’t yet have good reason to believe that this is correct.
+/// This should always produce correct answers, but the expected complexity
+/// guarantees may not hold.
 #[derive(Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct AUnionFind(Box<[Entry]>);
