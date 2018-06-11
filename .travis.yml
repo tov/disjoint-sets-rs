@@ -1,12 +1,5 @@
 language: rust
-sudo: required
-dist: trusty
-addons:
-  apt:
-    packages:
-      - libssl-dev
 cache: cargo
-
 rust:
   - stable
   - beta
@@ -23,6 +16,15 @@ script:
 notifications:
   email:
     on_success: never
+
+# For Tarpaulin code coverage:
+
+sudo: required
+dist: trusty
+addons:
+  apt:
+    packages:
+      - libssl-dev
 
 after_success: |
   if [[ "$TRAVIS_RUST_VERSION" == stable ]]; then
