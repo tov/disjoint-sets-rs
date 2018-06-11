@@ -1,10 +1,17 @@
 language: rust
+sudo: required
+dist: trusty
+addons:
+  apt:
+    packages:
+      - libssl-dev
+cache: cargo
+
 rust:
   - stable
   - beta
   - nightly
   - 1.21.0
-
 matrix:
   allow_failures:
     - rust: nightly
@@ -16,3 +23,11 @@ script:
 notifications:
   email:
     on_success: never
+
+after_success: |
+  if [[ "$TRAVIS_RUST_VERSION" == stable ]]; then
+    bash <(curl https://raw.githubusercontent.com/xd009642/tarpaulin/master/travis-install.sh)
+    cargo tarpaulin --ciserver travis-ci --coveralls $TRAVIS_JOB_ID
+  fi
+
+
