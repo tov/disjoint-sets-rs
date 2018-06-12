@@ -298,8 +298,7 @@ impl Serialize for AtomicEntry {
 #[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for AtomicEntry {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let entry = Entry::deserialize(deserializer)?;
-        Ok(AtomicEntry::from(entry))
+        Entry::deserialize(deserializer).map(AtomicEntry::from)
     }
 }
 
