@@ -4,6 +4,113 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 #[cfg(feature = "serde")]
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
 
+// Let's assume we're on a machine with 64-bit `usize`. Then how many
+// bits should we use for id, and how many for rank? In the worst case,
+// we can build a tree of rank 0 using 1 node, and a tree of rank *N* + 1
+// using two trees of rank *N*. So:
+//
+//   - Nodes(0) = 1
+//   - Nodes(*N* + 1) = 2 * Nodes(*N*)
+//
+//  In closed form, Nodes(*N*) = 2^*N*. So suppose we reserve *R* bits for
+//  rank. Then the maximum rank is 2^*R* - 1. So to reach that rank, we need
+//  2^(2^*R* - 1) nodes, which we can reach at 2^*R* - 1 bits per index. Thus,
+//  suppose *R* is 8. Then ranks can reach 255, which means we can handle
+//  255-bit objects. Suppose *R* is 6. Then ranks have room for 63. But with only
+//  58 remaining bits to play with, ranks cannot exceed 58.
+
+
+#[cfg(not(target_pointer_width = "32"))]
+const ID_BITS: usize = 58;
+#[cfg(not(target_pointer_width = "32"))]
+const RK_BITS: usize = 64 - ID_BITS;
+
+#[cfg(target_pointer_width = "32")]
+const ID_BITS: usize = 27;
+#[cfg(target_pointer_width = "32")]
+const RK_BITS: usize = 32 - ID_BITS;
+
+const RK_SHIFT: usize = 0;
+const ID_SHIFT: usize = RK_BITS;
+
+const RK_MASK: usize = (1 << RK_BITS) - 1;
+const ID_MASK: usize = !RK_MASK;
+
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+struct Entry {
+    id: usize,
+    rk: usize,
+}
+
+impl From<usize> for Entry {
+    fn from(value: usize) -> Self {
+        let id = (value & ID_MASK) >> ID_SHIFT;
+        let rk = (value & RK_MASK) >> RK_SHIFT;
+        Entry { id: id, rk: rk, }
+    }
+}
+
+impl From<Entry> for usize {
+    fn from(view: Entry) -> Self {
+        (view.id << ID_SHIFT) | (view.rk << RK_SHIFT)
+    }
+}
+
+impl Entry {
+    fn new(id: usize) -> Self {
+        Self::with_rank(id, 0)
+    }
+
+    fn with_rank(id: usize, rk: usize) -> Self {
+        debug_assert!( id < (1 << ID_BITS) );
+        debug_assert!( rk < (1 << RK_BITS) );
+        Entry {
+            id: id,
+            rk: rk,
+        }
+    }
+
+    fn inc_rank(self) -> Self {
+        Entry::with_rank(self.id, self.rk + 1)
+    }
+}
+
+struct AtomicEntry(AtomicUsize);
+
+impl Clone for AtomicEntry {
+    fn clone(&self) -> Self {
+        AtomicEntry(AtomicUsize::new(self.0.load(Ordering::Relaxed)))
+    }
+}
+
+impl From<Entry> for AtomicEntry {
+    fn from(view: Entry) -> Self {
+        let value = usize::from(view);
+        AtomicEntry(AtomicUsize::new(value))
+    }
+}
+
+impl AtomicEntry {
+    fn new(id: usize) -> Self {
+        Self::from(Entry::new(id))
+    }
+
+    fn load(&self, ordering: Ordering) -> Entry {
+        let value = self.0.load(ordering);
+        Entry::from(value)
+    }
+
+    fn compare_and_swap(&self, exp: Entry, new: Entry,
+                        ordering: Ordering) -> bool {
+
+        let exp_value = usize::from(exp);
+        let new_value = usize::from(new);
+        let old_value = self.0.compare_and_swap(exp_value, new_value, ordering);
+        exp_value == old_value
+    }
+}
+
 /// Lock-free, concurrent union-find representing a set of disjoint sets.
 ///
 /// If configured with Cargo feature `"serde"`, impls for `Serialize`
@@ -17,25 +124,13 @@ use serde::{Serialize, Serializer, Deserialize, Deserializer};
 /// guarantees may not hold.
 #[derive(Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct AUnionFind(Box<[Entry]>);
-
-struct Entry {
-    id:   AtomicUsize,
-    rank: AtomicUsize,
-}
-
-impl Clone for Entry {
-    fn clone(&self) -> Self {
-        Entry::with_rank(self.id.load(Ordering::SeqCst),
-                         self.rank.load(Ordering::SeqCst))
-    }
-}
+pub struct AUnionFind(Box<[AtomicEntry]>);
 
 impl Debug for AUnionFind {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "AUnionFind(")?;
         formatter.debug_list()
-            .entries(self.0.iter().map(|entry| &entry.id)).finish()?;
+            .entries(self.0.iter().map(|entry| entry.load(Ordering::Relaxed).id)).finish()?;
         write!(formatter, ")")
     }
 }
@@ -46,24 +141,21 @@ impl Default for AUnionFind {
     }
 }
 
-impl Entry {
-    fn new(id: usize) -> Self {
-        Self::with_rank(id, 0)
-    }
-
-    fn with_rank(id: usize, rank: usize) -> Self {
-        Entry {
-            id:   AtomicUsize::new(id),
-            rank: AtomicUsize::new(rank),
-        }
-    }
-}
-
 impl AUnionFind {
+    /// The maximum number of elements of an `AUnionFind`.
+    pub fn max_size() -> usize {
+        1 << ID_BITS
+    }
+
     /// Creates a new asynchronous union-find of `size` elements.
+    ///
+    /// # Panics
+    ///
+    /// If `size >= Self::max_size()`.
     pub fn new(size: usize) -> Self {
+        assert!(size < Self::max_size());
         AUnionFind((0..size)
-            .map(Entry::new)
+            .map(AtomicEntry::new)
             .collect::<Vec<_>>()
             .into_boxed_slice())
     }
@@ -87,39 +179,30 @@ impl AUnionFind {
     /// Returns whether anything changed. That is, if the sets were
     /// different, it returns `true`, but if they were already the same
     /// then it returns `false`.
-    pub fn union(&self, mut a: usize, mut b: usize) -> bool {
+    pub fn union(&self, mut a_id: usize, mut b_id: usize) -> bool {
         loop {
-            a = self.find(a);
-            b = self.find(b);
+            let a = self.find_entry(a_id);
+            let b = self.find_entry(b_id);
 
-            if a == b { return false; }
+            if a.id == b.id { return false; }
 
-            let rank_a = self.rank(a);
-            let rank_b = self.rank(b);
-
-            if rank_a > rank_b {
-                if self.change_parent(b, b, a) { return true; }
-            } else if rank_b > rank_a {
-                if self.change_parent(a, a, b) { return true; }
-            } else if self.change_parent(a, a, b) {
+            if a.rk > b.rk {
+                if self.compare_and_swap(b.id, b, a) { return true; }
+            } else if b.rk > a.rk {
+                if self.compare_and_swap(a.id, a, b) { return true; }
+            } else if self.compare_and_swap(a.id, a, b) {
                 self.increment_rank(b);
                 return true;
             }
+
+            a_id = a.id;
+            b_id = b.id;
         }
     }
 
     /// Finds the representative element for the given element’s set.
-    pub fn find(&self, mut element: usize) -> usize {
-        let mut parent = self.parent(element);
-
-        while element != parent {
-            let grandparent = self.parent(parent);
-            self.change_parent(element, parent, grandparent);
-            element = parent;
-            parent = grandparent;
-        }
-
-        element
+    pub fn find(&self, element: usize) -> usize {
+        self.find_entry(element).id
     }
 
     /// Determines whether two elements are in the same set.
@@ -129,7 +212,7 @@ impl AUnionFind {
             b = self.find(b);
 
             if a == b { return true; }
-            if self.parent(a) == a { return false; }
+            if self.load(a).id == a { return false; }
         }
     }
 
@@ -138,12 +221,12 @@ impl AUnionFind {
     pub fn force(&self) {
         for i in 0 .. self.len() {
             loop {
-                let parent = self.parent(i);
-                if i == parent {
+                let parent = self.load(i);
+                if i == parent.id {
                     break
                 } else {
-                    let root = self.find(parent);
-                    if parent == root || self.change_parent(i, parent, root) {
+                    let root = self.find_entry(parent.id);
+                    if parent.id == root.id || self.compare_and_swap(i, parent, root) {
                         break;
                     }
                 }
@@ -154,107 +237,121 @@ impl AUnionFind {
     /// Returns a vector of set representatives.
     pub fn to_vec(&self) -> Vec<usize> {
         self.force();
-        self.0.iter().map(|entry| entry.id.load(Ordering::SeqCst)).collect()
+        self.0.iter().map(|entry| entry.load(Ordering::SeqCst).id).collect()
     }
 
     // HELPERS
 
-    fn rank(&self, element: usize) -> usize {
-        self.0[element].rank.load(Ordering::SeqCst)
+    // Note that increment_rank can fail to CAS, but this should be okay,
+    // because the only ways it can fail are if 1) the id of the entry
+    // changed, in which case its rank doesn't matter any more, or 2)
+    // the rank changed, in which case it has already been incremented.
+    fn increment_rank(&self, entry: Entry) {
+        self.0[entry.id].compare_and_swap(entry,
+                                          entry.inc_rank(),
+                                          Ordering::SeqCst);
     }
 
-    fn increment_rank(&self, element: usize) {
-        self.0[element].rank.fetch_add(1, Ordering::SeqCst);
+    fn load(&self, element: usize) -> Entry {
+        self.0[element].load(Ordering::SeqCst)
     }
 
-    fn parent(&self, element: usize) -> usize {
-        self.0[element].id.load(Ordering::SeqCst)
+    fn find_entry(&self, mut element: usize) -> Entry {
+        let mut parent = self.load(element);
+
+        while element != parent.id {
+            let grandparent = self.load(parent.id);
+            self.compare_and_swap(element, parent, grandparent);
+            element = parent.id;
+            parent = grandparent;
+        }
+
+        parent
     }
 
-    fn change_parent(&self,
-                     element: usize,
-                     old_parent: usize,
-                     new_parent: usize)
-                     -> bool {
-        self.0[element].id.compare_and_swap(old_parent,
-                                            new_parent,
-                                            Ordering::SeqCst)
-            == old_parent
+    fn compare_and_swap(&self,
+                        index: usize,
+                        exp_entry: Entry,
+                        new_entry: Entry)
+                        -> bool {
+
+        self.0[index].compare_and_swap(exp_entry, new_entry, Ordering::SeqCst)
     }
 }
 
 #[cfg(feature = "serde")]
-impl Serialize for Entry {
+impl Serialize for AtomicEntry {
     fn serialize<S: Serializer>(&self, serializer: S)
                                 -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
     {
-        use serde::ser::SerializeStruct;
-
-        let mut tuple = serializer.serialize_struct("Entry", 2)?;
-        tuple.serialize_field("id", &self.id.load(Ordering::Relaxed))?;
-        tuple.serialize_field("rank", &self.rank.load(Ordering::Relaxed))?;
-        tuple.end()
+        let entry = self.load(Ordering::Relaxed);
+        Entry::serialize(&entry, serializer)
     }
 }
 
 #[cfg(feature = "serde")]
-impl<'de> Deserialize<'de> for Entry {
+impl<'de> Deserialize<'de> for AtomicEntry {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        use serde::de::{self, Visitor, SeqAccess, MapAccess};
-
-        #[derive(Deserialize)]
-        #[serde(field_identifier, rename_all = "lowercase")]
-        enum Field { Id, Rank, }
-
-        struct EntryVisitor;
-
-        impl<'de> Visitor<'de> for EntryVisitor {
-            type Value = Entry;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("struct Entry")
-            }
-
-            fn visit_seq<V: SeqAccess<'de>>(self, mut seq: V) -> Result<Self::Value, V::Error> {
-                let id = seq.next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(0, &self))?;
-                let rank = seq.next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                Ok(Entry::with_rank(id, rank))
-            }
-
-            fn visit_map<V: MapAccess<'de>>(self, mut map: V) -> Result<Self::Value, V::Error> {
-                let mut id   = None;
-                let mut rank = None;
-
-                while let Some(key) = map.next_key()? {
-                    match key {
-                        Field::Id => {
-                            if id.is_some() {
-                                return Err(de::Error::duplicate_field("id"));
-                            }
-                            id = Some(map.next_value()?);
-                        }
-                        Field::Rank => {
-                            if rank.is_some() {
-                                return Err(de::Error::duplicate_field("rank"));
-                            }
-                            rank = Some(map.next_value()?);
-                        }
-                    }
-                }
-
-                let id   = id.ok_or_else(|| de::Error::missing_field("id"))?;
-                let rank = rank.ok_or_else(|| de::Error::missing_field("rank"))?;
-
-                Ok(Entry::with_rank(id, rank))
-            }
-        }
-
-        const FIELDS: &'static [&'static str] = &["id", "rank"];
-        deserializer.deserialize_struct("Entry", FIELDS, EntryVisitor)
+        let entry = Entry::deserialize(deserializer)?;
+        Ok(AtomicEntry::from(entry))
     }
 }
+
+//        use serde::de::{self, Visitor, SeqAccess, MapAccess};
+//
+//        #[derive(Deserialize)]
+//        #[serde(field_identifier, rename_all = "lowercase")]
+//        enum Field { Id, Rank, }
+//
+//        struct EntryVisitor;
+//
+//        impl<'de> Visitor<'de> for EntryVisitor {
+//            type Value = AtomicEntry;
+//
+//            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+//                formatter.write_str("struct AtomicEntry")
+//            }
+//
+//            fn visit_seq<V: SeqAccess<'de>>(self, mut seq: V) -> Result<Self::Value, V::Error> {
+//                let id = seq.next_element()?
+//                    .ok_or_else(|| de::Error::invalid_length(0, &self))?;
+//                let rank = seq.next_element()?
+//                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+//                    Ok(Entry::with_rank(id, rank))
+//                }
+//
+//                fn visit_map<V: MapAccess<'de>>(self, mut map: V) -> Result<Self::Value, V::Error> {
+//                    let mut id   = None;
+//                    let mut rank = None;
+//
+//                    while let Some(key) = map.next_key()? {
+//                        match key {
+//                            Field::Id => {
+//                                if id.is_some() {
+//                                    return Err(de::Error::duplicate_field("id"));
+//                                }
+//                                id = Some(map.next_value()?);
+//                            }
+//                            Field::Rank => {
+//                                if rank.is_some() {
+//                                    return Err(de::Error::duplicate_field("rank"));
+//                                }
+//                                rank = Some(map.next_value()?);
+//                            }
+//                        }
+//                    }
+//
+//                    let id   = id.ok_or_else(|| de::Error::missing_field("id"))?;
+//                    let rank = rank.ok_or_else(|| de::Error::missing_field("rank"))?;
+//
+//                    Ok(Entry::with_rank(id, rank))
+//            }
+//        }
+//
+//        const FIELDS: &'static [&'static str] = &["id", "rank"];
+//        deserializer.deserialize_struct("Entry", FIELDS, EntryVisitor)
+//    }
+//}
 
 #[cfg(test)]
 mod tests {
