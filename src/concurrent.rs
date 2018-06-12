@@ -4,21 +4,24 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 #[cfg(feature = "serde")]
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
 
-// Let's assume we're on a machine with 64-bit `usize`. Then how many
-// bits should we use for id, and how many for rank? In the worst case,
-// we can build a tree of rank 0 using 1 node, and a tree of rank *N* + 1
-// using two trees of rank *N*. So:
+// How many bits should we use for id, and how many for rank? In the worst
+// case, we can build a tree of rank 0 using 1 node, and a tree of rank
+// *N* + 1 using two trees of rank *N*. So:
 //
 //   - Nodes(0) = 1
 //   - Nodes(*N* + 1) = 2 * Nodes(*N*)
 //
 //  In closed form, Nodes(*N*) = 2^*N*. So suppose we reserve *R* bits for
 //  rank. Then the maximum rank is 2^*R* - 1. So to reach that rank, we need
-//  2^(2^*R* - 1) nodes, which we can reach at 2^*R* - 1 bits per index. Thus,
-//  suppose *R* is 8. Then ranks can reach 255, which means we can handle
-//  255-bit objects. Suppose *R* is 6. Then ranks have room for 63. But with only
+//  2^(2^*R* - 1) nodes, which we can reach at 2^*R* - 1 bits per index.
+//
+//  With 64 bits to allot, suppose that *R* is 8. Then we can accommodate ranks
+//  up to 255, but since we are limited to 2^56 objects, the highest rank we can
+//  attain is 56.. Let *R* be 6. Then ranks have room for 63. But with only
 //  58 remaining bits to play with, ranks cannot exceed 58.
-
+//
+//  For a 32-bit platform, let *R* be 5. Then we can accomodate ranks up to 32,
+//  which is safe for the remaining 27 bits that we will use for ids.
 
 #[cfg(not(target_pointer_width = "32"))]
 const ID_BITS: usize = 58;
