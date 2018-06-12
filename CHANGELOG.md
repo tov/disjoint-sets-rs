@@ -15,6 +15,8 @@ The format is based on [Keep a Changelog] and this project adheres to
 platforms (no more than 2<sup>27</sup> objects on 32-bit platforms).
 
 ### Added
+- `AUnionFind::max_size` method, which returns the largest allowable argument
+ to `AUnionFind::new`.
 - Random testing of `AUnionFind` using `quickcheck`.
 
 ## [0.4.2] - 2018-05-30

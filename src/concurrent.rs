@@ -157,9 +157,9 @@ impl AUnionFind {
     ///
     /// # Panics
     ///
-    /// If `size >= Self::max_size()`.
+    /// If `size > Self::max_size()`.
     pub fn new(size: usize) -> Self {
-        assert!(size < Self::max_size());
+        assert!(size <= Self::max_size());
         AUnionFind((0..size)
             .map(AtomicEntry::new)
             .collect::<Vec<_>>()
