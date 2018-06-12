@@ -303,62 +303,6 @@ impl<'de> Deserialize<'de> for AtomicEntry {
     }
 }
 
-//        use serde::de::{self, Visitor, SeqAccess, MapAccess};
-//
-//        #[derive(Deserialize)]
-//        #[serde(field_identifier, rename_all = "lowercase")]
-//        enum Field { Id, Rank, }
-//
-//        struct EntryVisitor;
-//
-//        impl<'de> Visitor<'de> for EntryVisitor {
-//            type Value = AtomicEntry;
-//
-//            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-//                formatter.write_str("struct AtomicEntry")
-//            }
-//
-//            fn visit_seq<V: SeqAccess<'de>>(self, mut seq: V) -> Result<Self::Value, V::Error> {
-//                let id = seq.next_element()?
-//                    .ok_or_else(|| de::Error::invalid_length(0, &self))?;
-//                let rank = seq.next_element()?
-//                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-//                    Ok(Entry::with_rank(id, rank))
-//                }
-//
-//                fn visit_map<V: MapAccess<'de>>(self, mut map: V) -> Result<Self::Value, V::Error> {
-//                    let mut id   = None;
-//                    let mut rank = None;
-//
-//                    while let Some(key) = map.next_key()? {
-//                        match key {
-//                            Field::Id => {
-//                                if id.is_some() {
-//                                    return Err(de::Error::duplicate_field("id"));
-//                                }
-//                                id = Some(map.next_value()?);
-//                            }
-//                            Field::Rank => {
-//                                if rank.is_some() {
-//                                    return Err(de::Error::duplicate_field("rank"));
-//                                }
-//                                rank = Some(map.next_value()?);
-//                            }
-//                        }
-//                    }
-//
-//                    let id   = id.ok_or_else(|| de::Error::missing_field("id"))?;
-//                    let rank = rank.ok_or_else(|| de::Error::missing_field("rank"))?;
-//
-//                    Ok(Entry::with_rank(id, rank))
-//            }
-//        }
-//
-//        const FIELDS: &'static [&'static str] = &["id", "rank"];
-//        deserializer.deserialize_struct("Entry", FIELDS, EntryVisitor)
-//    }
-//}
-
 #[cfg(test)]
 mod tests {
     use super::*;
