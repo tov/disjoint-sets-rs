@@ -39,6 +39,9 @@ const ID_SHIFT: usize = RK_BITS;
 const RK_MASK: usize = (1 << RK_BITS) - 1;
 const ID_MASK: usize = !RK_MASK;
 
+const RK_MAX: usize = 1 << RK_BITS;
+const ID_MAX: usize = 1 << ID_BITS;
+
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 struct Entry {
@@ -66,8 +69,8 @@ impl Entry {
     }
 
     fn with_rank(id: usize, rk: usize) -> Self {
-        debug_assert!( id < (1 << ID_BITS) );
-        debug_assert!( rk < (1 << RK_BITS) );
+        debug_assert!( id < ID_MAX );
+        debug_assert!( rk < RK_MAX );
         Entry {
             id: id,
             rk: rk,
@@ -147,7 +150,7 @@ impl Default for AUnionFind {
 impl AUnionFind {
     /// The maximum number of elements of an `AUnionFind`.
     pub fn max_size() -> usize {
-        1 << ID_BITS
+        ID_MAX
     }
 
     /// Creates a new asynchronous union-find of `size` elements.
