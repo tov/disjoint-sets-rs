@@ -23,9 +23,9 @@ use serde::{Serialize, Serializer, Deserialize, Deserializer};
 //  For a 32-bit platform, let *R* be 5. Then we can accomodate ranks up to 32,
 //  which is safe for the remaining 27 bits that we will use for ids.
 
-#[cfg(not(target_pointer_width = "32"))]
+#[cfg(target_pointer_width = "64")]
 const ID_BITS: usize = 58;
-#[cfg(not(target_pointer_width = "32"))]
+#[cfg(target_pointer_width = "64")]
 const RK_BITS: usize = 64 - ID_BITS;
 
 #[cfg(target_pointer_width = "32")]
