@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog] and this project adheres to
 
 ## [Unreleased]
 
+### Changed
+- `AUnionFind` now allows no more than 2<sup>58</sup> objects on 64-bit
+platforms (no more than 2<sup>27</sup> objects on 32-bit platforms).
+
 ### Added
 - Random testing of `AUnionFind` using `quickcheck`.
 
